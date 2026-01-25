@@ -25,6 +25,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+async def root():
+    return {
+        "message": "Aletheia Backend API", 
+        "status": "running",
+        "endpoints": {
+            "docs": "/docs",
+            "redoc": "/redoc",
+            "api_plan": "/api/plan (POST)"
+        }
+    }
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "timestamp": time.time()}
 class GoalRequest(BaseModel):
     goal: str
 
