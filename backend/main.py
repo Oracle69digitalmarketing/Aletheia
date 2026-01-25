@@ -40,6 +40,7 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "healthy", "timestamp": time.time()}
+    
 class GoalRequest(BaseModel):
     goal: str
 
