@@ -1,7 +1,7 @@
 
 import { Plan, TaskStatus, LogEntry } from "../types";
 
-const API_URL = "http://localhost:8000";
+const API_URL = import.meta.env.VITE_API_URL || 'https://aletheia-aco2.onrender.com';
 
 export const generateAgenticPlan = async (goal: string): Promise<Plan> => {
   const response = await fetch(`${API_URL}/api/plan`, {
