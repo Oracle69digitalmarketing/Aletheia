@@ -6,7 +6,7 @@ import { Plan, TaskStatus, LogEntry } from "../types";
  * Replace the string below with your actual Render backend URL 
  * (e.g., https://aletheia-backend.onrender.com)
  */
-const PRODUCTION_API_URL = "https://your-backend-app.onrender.com"; 
+const PRODUCTION_API_URL = "https://aletheia-aco2.onrender.com"; 
 
 const API_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
   ? "http://localhost:8000"
