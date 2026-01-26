@@ -6,11 +6,9 @@ import { Plan, TaskStatus, LogEntry } from "../types";
  * Replace the string below with your actual Render backend URL 
  * (e.g., https://aletheia-backend.onrender.com)
  */
-const PRODUCTION_API_URL = "https://aletheia-aco2.onrender.com"; 
+const PRODUCTION_API_URL = "https://aletheia-backend-yu1n.onrender.com"; 
 
-const API_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-  ? "http://localhost:8000"
-  : PRODUCTION_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "https://aletheia-backend-yu1n.onrender.com";
 
 export const generateAgenticPlan = async (goal: string): Promise<Plan> => {
   // Add a trailing slash check or ensure consistency
