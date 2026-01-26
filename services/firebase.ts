@@ -1,29 +1,21 @@
-
+// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { 
-  getAuth, 
-  GoogleAuthProvider, 
-  GithubAuthProvider, 
-  signInWithPopup, 
-  signOut,
-  onAuthStateChanged
-} from "firebase/auth";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
-// IMPORTANT: Replace these placeholders with your actual Firebase project config
-// You can find this in your Firebase Console: Project Settings > General > Your Apps
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyA_F3-1BPpnm4T04L7tRQGn1ElloKKHKIU",
+  authDomain: "aletheia-db208.firebaseapp.com",
+  projectId: "aletheia-db208",
+  storageBucket: "aletheia-db208.firebasestorage.app",
+  messagingSenderId: "230765515082",
+  appId: "1:230765515082:web:1e78b1cc54b290459131b3",
+  measurementId: "G-2Z60TPXEQS"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-
-export const googleProvider = new GoogleAuthProvider();
-export const githubProvider = new GithubAuthProvider();
-
-export { signInWithPopup, signOut, onAuthStateChanged };
+const analytics = getAnalytics(app);
