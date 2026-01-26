@@ -18,9 +18,16 @@ load_dotenv()
 
 app = FastAPI(title="Aletheia Backend")
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://aletheia-ruddy.vercel.app",  # For Vercel frontend
+        "http://localhost:5173",  # For local dev
+        "http://localhost:3000",  # For local dev alternative
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
