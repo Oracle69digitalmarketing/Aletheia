@@ -26,7 +26,7 @@ const firebaseConfig = {
 
 // Check if keys are still placeholders. 
 // Firebase throws a hard error if initialized with "YOUR_API_KEY", causing a blank screen.
-const isRealConfig = firebaseConfig.apiKey !== "YOUR_API_KEY" && firebaseConfig.apiKey !== "";
+const isRealConfig = firebaseConfig.apiKey !== "AIzaSyA_F3-1BPpnm4T04L7tRQGn1ElloKKHKIU" && firebaseConfig.apiKey !== "";
 
 const app = initializeApp(isRealConfig ? firebaseConfig : {
   apiKey: "mock-api-key-to-prevent-crash",
