@@ -34,7 +34,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onPlanUpdate, user }) => {
       }
     } catch (err) {
       console.error(err);
-      alert("Backend connection failed. Ensure FastAPI is running on http://localhost:8000");
+      alert("Aletheia Engine is currently unreachable. Please check your connection or try again later.");
     } finally {
       setIsLoading(false);
     }
