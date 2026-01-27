@@ -90,9 +90,10 @@ const App: React.FC = () => {
           </p>
           <div className="flex justify-center gap-6 mb-10">
             {[
-              { icon: 'fa-github', url: 'https://github.com/aletheia-engine' },
-              { icon: 'fa-twitter', url: 'https://twitter.com/aletheia_ai' },
-              { icon: 'fa-discord', url: 'https://discord.gg/aletheia' }
+              { icon: 'fa-github', url: 'https://github.com/oracle69digitalmarketing' },
+              { icon: 'fa-twitter', url: 'https://x.com/sophiemabel69' },
+              { icon: 'fa-discord', url: 'https://support.discord.com/hc/en-us/profiles/17067005644695' },
+              { icon: 'fa-linkedin', url: 'https://www.linkedin.com/in/oracle69digitalmarketing' }
             ].map((social, i) => (
               <a 
                 key={i} 
