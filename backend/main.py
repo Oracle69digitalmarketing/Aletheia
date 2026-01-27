@@ -112,7 +112,15 @@ def create_plan(request: GoalRequest):
     # Retrieve the ACTUAL Opik Trace ID for this request
     # This ensures the 'View in Comet' link actually works.
     trace_id = opik.get_current_trace_id() or str(uuid.uuid4())
+    trace = opik.get_current_trace()
     
+    if trace:
+        trace.update(feedback=[
+            {"name": "actionability", "value": scores.get("actionability", 4.0)},
+            {"name": "relevance", "value": scores.get("relevance", 4.0)},
+            {"name": "helpfulness", "value": scores.get("helpfulness", 4.0)}
+        ])
+
     return {
         "id": str(uuid.uuid4())[:8],
         "trace_id": trace_id,
