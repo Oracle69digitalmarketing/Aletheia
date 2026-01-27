@@ -4,7 +4,8 @@ import { User } from '../types';
 import { 
   auth, 
   googleProvider, 
-  githubProvider, 
+  githubProvider,
+  twitterProvider,
   signInWithPopup 
 } from '../services/firebase';
 
@@ -20,11 +21,14 @@ const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onConnect 
 
   if (!isOpen) return null;
 
-  const handleFirebaseSignIn = async (providerName: 'google' | 'github') => {
+  const handleFirebaseSignIn = async (providerName: 'google' | 'github' | 'twitter') => {
     setIsConnecting(providerName);
     setError(null);
     
-    const provider = providerName === 'google' ? googleProvider : githubProvider;
+    let provider;
+    if (providerName === 'google') provider = googleProvider;
+    else if (providerName === 'github') provider = githubProvider;
+    else provider = twitterProvider;
 
     try {
       const result = await signInWithPopup(auth, provider);
@@ -117,6 +121,25 @@ const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onConnect 
                 <>
                   <i className="fa-brands fa-github text-lg group-hover:scale-110 transition-transform"></i>
                   Continue with GitHub
+                </>
+              )}
+            </button>
+
+            {/* Real Twitter Authentication */}
+            <button
+              onClick={() => handleFirebaseSignIn('twitter')}
+              disabled={!!isConnecting}
+              className="w-full flex items-center justify-center gap-3 py-3.5 px-4 bg-[#1DA1F2] text-white rounded-2xl hover:bg-[#1a8cd8] transition-all font-bold disabled:opacity-50 group shadow-lg shadow-blue-100"
+            >
+              {isConnecting === 'twitter' ? (
+                <div className="flex items-center gap-2">
+                  <i className="fa-solid fa-circle-notch animate-spin text-white"></i>
+                  <span>Opening Twitter...</span>
+                </div>
+              ) : (
+                <>
+                  <i className="fa-brands fa-twitter text-lg group-hover:scale-110 transition-transform"></i>
+                  Continue with Twitter
                 </>
               )}
             </button>

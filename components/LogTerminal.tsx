@@ -14,7 +14,7 @@ const LogTerminal: React.FC<LogTerminalProps> = ({ goal }) => {
     { level: 'INFO', source: 'SYSTEM', message: `Initializing Aletheia Agentic Workflow for: "${goal}"` },
     { level: 'TRACE', source: 'OPIK', message: 'Trace context created. Session ID: ' + Math.random().toString(36).substr(2, 9) },
     { level: 'DEBUG', source: 'PLANNER', message: 'Analyzing goal structure and semantic intent...' },
-    { level: 'INFO', source: 'PLANNER', message: 'Decomposing milestones based on gemini-3-flash reasoning engine.' },
+    { level: 'INFO', source: 'PLANNER', message: 'Decomposing milestones based on gemini-1.5-flash reasoning engine.' },
     { level: 'DEBUG', source: 'MONITOR', message: 'Scanning for psychological friction and habit blockers...' },
     { level: 'INFO', source: 'MONITOR', message: 'Predictive friction analysis complete. Generating intervention.' },
     { level: 'DEBUG', source: 'ORCHESTRATOR', message: 'Calculating optimal task sequences and dependencies.' },
@@ -27,20 +27,23 @@ const LogTerminal: React.FC<LogTerminalProps> = ({ goal }) => {
     let index = 0;
     const interval = setInterval(() => {
       if (index < mockLogs.length) {
-        setLogs(prev => [...prev, {
-          id: Math.random().toString(36),
-          timestamp: new Date().toLocaleTimeString(),
-          level: mockLogs[index].level as any,
-          source: mockLogs[index].source,
-          message: mockLogs[index].message
-        }]);
+        const currentMock = mockLogs[index];
+        if (currentMock) {
+          setLogs(prev => [...prev, {
+            id: Math.random().toString(36).substr(2, 9),
+            timestamp: new Date().toLocaleTimeString(),
+            level: (currentMock.level || 'INFO') as any,
+            source: currentMock.source || 'SYSTEM',
+            message: currentMock.message || ''
+          }]);
+        }
         index++;
       } else {
         clearInterval(interval);
       }
     }, 500);
     return () => clearInterval(interval);
-  }, []);
+  }, [goal]);
 
   useEffect(() => {
     if (scrollRef.current) {
