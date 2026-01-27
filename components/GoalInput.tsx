@@ -36,12 +36,12 @@ const GoalInput: React.FC<GoalInputProps> = ({ onPlanGenerated, isLoading }) => 
             onChange={(e) => setGoal(e.target.value)}
             disabled={isLoading}
             placeholder="e.g. Learn to code and get a job in 2024"
-            className="w-full pl-6 pr-32 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-lg"
+            className="w-full pl-6 pr-28 sm:pr-36 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-base sm:text-lg"
           />
           <button
             type="submit"
             disabled={isLoading || !goal.trim()}
-            className="absolute right-2 top-2 bottom-2 bg-indigo-600 text-white px-6 rounded-lg font-bold hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            className="absolute right-1.5 top-1.5 bottom-1.5 bg-indigo-600 text-white px-4 sm:px-6 rounded-lg font-bold hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2 text-sm sm:text-base"
           >
             {isLoading ? (
               <>
