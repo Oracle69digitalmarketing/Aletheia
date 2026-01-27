@@ -16,7 +16,7 @@ const PlanDisplay: React.FC<PlanDisplayProps> = ({ plan }) => {
   };
 
   const completed = tasks.filter(t => t.status === TaskStatus.COMPLETED).length;
-  const progress = Math.round((completed / tasks.length) * 100);
+  const progress = tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
 
   const statusConfig = {
     [TaskStatus.TODO]: {
@@ -171,7 +171,7 @@ const PlanDisplay: React.FC<PlanDisplayProps> = ({ plan }) => {
                     r.agent === 'Orchestrator' ? 'bg-amber-50 text-amber-600 border-amber-100' :
                     'bg-emerald-50 text-emerald-600 border-emerald-100'
                   }`}>
-                    {r.agent[0]}
+                    {(r.agent || 'A')[0]}
                   </div>
                   {i !== plan.agentReasoning.length - 1 && <div className="w-px h-full bg-slate-100 my-2"></div>}
                 </div>
