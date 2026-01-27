@@ -57,11 +57,11 @@ export const generateAgenticPlan = async (goal: string): Promise<Plan> => {
       logs: logs,
       frictionIntervention: data.friction_intervention || "No friction detected.",
       metrics: {
-        actionability: data.metrics.actionability || 0,
-        relevance: data.metrics.relevance || 0,
-        helpfulness: data.metrics.helpfulness || 0,
-        latency: data.metrics.latency || 0,
-        projectUrl: data.metrics.project_url || ""
+        actionability: data.metrics?.actionability ?? 0,
+        relevance: data.metrics?.relevance ?? 0,
+        helpfulness: data.metrics?.helpfulness ?? 0,
+        latency: data.metrics?.latency ?? 0,
+        projectUrl: data.metrics?.project_url ?? ""
       }
     };
   } catch (err: any) {
