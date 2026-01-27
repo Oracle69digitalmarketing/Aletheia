@@ -55,7 +55,7 @@ const Header: React.FC<HeaderProps> = ({ projectUrl, user, onConnect, onDisconne
                 Strategy
               </button>
               <a 
-                href="https://github.com/aletheia-engine/aletheia/blob/main/docs/ALETHEIA.md"
+                href="https://github.com/oracle69digitalmarketing/aletheia/blob/main/docs/ALETHEIA.md"
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-slate-500 hover:text-indigo-600 transition-colors text-sm font-bold flex items-center gap-1.5"
@@ -170,7 +170,7 @@ const Header: React.FC<HeaderProps> = ({ projectUrl, user, onConnect, onDisconne
                 Dashboard
               </button>
               <a 
-                href="https://github.com/aletheia-engine/aletheia/blob/main/docs/ALETHEIA.md"
+                href="https://github.com/oracle69digitalmarketing/aletheia/blob/main/docs/ALETHEIA.md"
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="w-full text-left px-4 py-3 text-slate-700 font-bold hover:bg-slate-50 rounded-xl flex items-center gap-3"
