@@ -26,6 +26,7 @@ app.add_middleware(
         "https://aletheia-ruddy.vercel.app",  # For Vercel frontend
         "http://localhost:5173",  # For local dev
         "http://localhost:3000",  # For local dev alternative
+        "http://localhost:3001",  # For local dev alternative 2
     ],
     allow_credentials=True,
     allow_methods=["*"],
