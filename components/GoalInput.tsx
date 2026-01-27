@@ -35,7 +35,7 @@ const GoalInput: React.FC<GoalInputProps> = ({ onPlanGenerated, isLoading }) => 
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
               disabled={isLoading}
-              placeholder="e.g. Learn to code and get a job in 2024"
+              placeholder="e.g. Learn to code and get a job in 2026"
               rows={2}
               className="w-full pl-6 pr-6 sm:pr-40 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-base sm:text-lg resize-none min-h-[100px]"
             />

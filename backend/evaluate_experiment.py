@@ -43,7 +43,9 @@ def actionability_metric(output, **kwargs):
     # Or just check if it's a list
     try:
         import json
-        tasks = eval(output)
+        # Replace single quotes with double quotes for valid JSON if the LLM output used them
+        json_str = output.replace("'", '"')
+        tasks = json.loads(json_str)
         if isinstance(tasks, list) and len(tasks) > 0:
             return 1.0
     except:

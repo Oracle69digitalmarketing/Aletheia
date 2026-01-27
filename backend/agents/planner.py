@@ -27,7 +27,7 @@ def decompose_goal(goal: str) -> List[Dict]:
     Do not include markdown formatting like ```json.
     """
     model = None
-    for m_name in ['gemini-3-flash-preview'] + MODELS:
+    for m_name in MODELS:
         try:
             model = get_model(m_name)
             response = model.generate_content(prompt)
@@ -64,7 +64,7 @@ def detect_friction(goal: str, tasks: List[Dict]) -> str:
     Provide a one-sentence, encouraging, yet firm intervention quote.
     """
     model = None
-    for m_name in ['gemini-3-flash-preview'] + MODELS:
+    for m_name in MODELS:
         try:
             model = get_model(m_name)
             response = model.generate_content(prompt)

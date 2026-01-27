@@ -23,3 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 .env
+__pycache__/
+*.pyc
+venv/
+.venv/
+verification/
+*.png
+*.html

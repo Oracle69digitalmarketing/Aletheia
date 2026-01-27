@@ -23,9 +23,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onPlanUpdate, user }) => {
     setLastGoal(goal);
     try {
       const plan = await generateAgenticPlan(goal);
-      setCurrentPlan(plan);
-      setView('strategy');
-      if (onPlanUpdate) onPlanUpdate(plan);
+      if (plan) {
+        setCurrentPlan(plan);
+        setView('strategy');
+        try {
+          if (onPlanUpdate) onPlanUpdate(plan);
+        } catch (updateErr) {
+          console.error("onPlanUpdate Error:", updateErr);
+        }
+      }
     } catch (err) {
       console.error(err);
       alert("Backend connection failed. Ensure FastAPI is running on http://localhost:8000");
