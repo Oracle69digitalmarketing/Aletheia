@@ -1,10 +1,8 @@
 
 import os
 import json
-import asyncio
-from google import genai
+import google.generativeai as genai
 from opik import track
-from opik.integrations.genai import track_genai
 from typing import List, Dict, Optional
 
 # Model fallbacks for robustness

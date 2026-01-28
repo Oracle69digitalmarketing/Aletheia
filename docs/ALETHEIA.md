@@ -24,3 +24,19 @@ Welcome to Aletheia, your Agentic AI Accountability Co-pilot.
 - **AI**: Google Gemini API, LangChain
 - **Observability**: Comet Opik
 - **Auth**: Firebase Authentication
+
+## Opik Comet Integration
+
+Aletheia uses Comet Opik for agent observability. To configure your own workspace:
+
+1. **Environment Variables**:
+   Set the following in your backend `.env` file or deployment environment (e.g., Render settings):
+   - `OPIK_API_KEY`: Your Comet API Key (found in Comet Account Settings).
+   - `COMET_WORKSPACE`: Your workspace name.
+   - `COMET_PROJECT`: The project name (defaults to `aletheia-hackathon`).
+
+2. **Automatic Tracing**:
+   All agent interactions are automatically tracked using the `@track` decorator. Traces are pushed asynchronously to the Comet dashboard.
+
+3. **LLM-as-Judge**:
+   The `Evaluator Ensemble` runs as a tracked span, scoring every plan on Actionability, Relevance, and Helpfulness. These scores are synced back to the main trace for performance comparison.

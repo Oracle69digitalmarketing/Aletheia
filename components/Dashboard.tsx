@@ -34,7 +34,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onPlanUpdate, user }) => {
       }
     } catch (err) {
       console.error(err);
-      alert("Aletheia Engine is currently unreachable. Please check your connection or try again later.");
+      alert(`Aletheia Engine is currently unreachable at ${import.meta.env.VITE_API_URL || "the production URL"}. Please ensure the backend is active and CORS is allowed for ${window.location.origin}.`);
     } finally {
       setIsLoading(false);
     }

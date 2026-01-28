@@ -2,7 +2,6 @@
 import os
 import uuid
 import time
-import asyncio
 import opik
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -36,7 +35,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root():
     return {
         "message": "Aletheia Backend API", 
@@ -48,7 +47,7 @@ async def root():
         }
     }
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
     return {"status": "healthy", "timestamp": time.time()}
 
@@ -90,20 +89,19 @@ class PlanResponse(BaseModel):
 
 @app.post("/api/plan", response_model=PlanResponse)
 @track(name="generate_plan_workflow")
-async def create_plan(request: GoalRequest):
+def create_plan(request: GoalRequest):
     start_time = time.time()
     
-    # 1. Planner Agent (Sequential - must happen first)
-    ai_tasks = await decompose_goal(request.goal)
+    # 1. Planner Agent
+    ai_tasks = decompose_goal(request.goal)
     if not ai_tasks:
         ai_tasks = [{"title": "Initial Action", "description": "Define the first step for this goal.", "duration": "15m"}]
     
-    # 2 & 3. Run Monitor and Evaluator Agent concurrently to reduce latency
-    # Both depend on ai_tasks
-    intervention_task = detect_friction(request.goal, ai_tasks)
-    eval_task = evaluate_plan(request.goal, ai_tasks)
+    # 2. Friction/Monitor Agent
+    intervention = detect_friction(request.goal, ai_tasks)
     
-    intervention, scores = await asyncio.gather(intervention_task, eval_task)
+    # 3. Evaluation Agent (Real scoring)
+    scores = evaluate_plan(request.goal, ai_tasks)
     
     # 4. Categorization logic
     goal_lower = request.goal.lower()
@@ -127,11 +125,14 @@ async def create_plan(request: GoalRequest):
     trace_id = trace_data.id if trace_data else str(uuid.uuid4())
     
     if trace_data:
-        opik_context.update_current_trace(feedback_scores=[
-            {"name": "actionability", "value": scores.get("actionability", 4.0)},
-            {"name": "relevance", "value": scores.get("relevance", 4.0)},
-            {"name": "helpfulness", "value": scores.get("helpfulness", 4.0)}
-        ])
+        try:
+            opik_context.update_current_trace(feedback_scores=[
+                {"name": "actionability", "value": scores.get("actionability", 4.0)},
+                {"name": "relevance", "value": scores.get("relevance", 4.0)},
+                {"name": "helpfulness", "value": scores.get("helpfulness", 4.0)}
+            ])
+        except Exception as e:
+            print(f"Opik Update Warning: {e}")
 
     return {
         "id": str(uuid.uuid4())[:8],

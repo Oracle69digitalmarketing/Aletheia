@@ -14,17 +14,12 @@ export const generateAgenticPlan = async (goal: string): Promise<Plan> => {
   // Add a trailing slash check or ensure consistency
   const endpoint = `${API_URL.replace(/\/$/, '')}/api/plan`;
   
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
-
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ goal }),
-      signal: controller.signal
+      body: JSON.stringify({ goal })
     });
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ detail: 'Service Unreachable' }));
