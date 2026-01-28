@@ -24,6 +24,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://aletheia-ruddy.vercel.app",  # For Vercel frontend
+        "https://aletheia-ruddy.vercel.app/", # For Vercel frontend (trailing slash)
         "http://localhost:5173",  # For local dev
         "http://localhost:3000",  # For local dev alternative
         "http://localhost:3001",  # For local dev alternative 2
