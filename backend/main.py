@@ -3,7 +3,8 @@ import os
 import uuid
 import time
 import opik
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
@@ -34,7 +35,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root():
     return {
         "message": "Aletheia Backend API", 
@@ -46,9 +47,16 @@ async def root():
         }
     }
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
     return {"status": "healthy", "timestamp": time.time()}
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc), "type": type(exc).__name__},
+    )
     
 class GoalRequest(BaseModel):
     goal: str
@@ -117,11 +125,14 @@ def create_plan(request: GoalRequest):
     trace_id = trace_data.id if trace_data else str(uuid.uuid4())
     
     if trace_data:
-        opik_context.update_current_trace(feedback_scores=[
-            {"name": "actionability", "value": scores.get("actionability", 4.0)},
-            {"name": "relevance", "value": scores.get("relevance", 4.0)},
-            {"name": "helpfulness", "value": scores.get("helpfulness", 4.0)}
-        ])
+        try:
+            opik_context.update_current_trace(feedback_scores=[
+                {"name": "actionability", "value": scores.get("actionability", 4.0)},
+                {"name": "relevance", "value": scores.get("relevance", 4.0)},
+                {"name": "helpfulness", "value": scores.get("helpfulness", 4.0)}
+            ])
+        except Exception as e:
+            print(f"Opik Update Warning: {e}")
 
     return {
         "id": str(uuid.uuid4())[:8],
