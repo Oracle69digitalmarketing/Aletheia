@@ -2,8 +2,10 @@
 import os
 import uuid
 import time
+import asyncio
 import opik
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
@@ -24,8 +26,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://aletheia-ruddy.vercel.app",  # For Vercel frontend
+        "https://aletheia-ruddy.vercel.app/", # For Vercel frontend (trailing slash)
         "http://localhost:5173",  # For local dev
         "http://localhost:3000",  # For local dev alternative
+        "http://localhost:3001",  # For local dev alternative 2
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -47,6 +51,13 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "healthy", "timestamp": time.time()}
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc), "type": type(exc).__name__},
+    )
     
 class GoalRequest(BaseModel):
     goal: str
@@ -79,19 +90,20 @@ class PlanResponse(BaseModel):
 
 @app.post("/api/plan", response_model=PlanResponse)
 @track(name="generate_plan_workflow")
-def create_plan(request: GoalRequest):
+async def create_plan(request: GoalRequest):
     start_time = time.time()
     
-    # 1. Planner Agent
-    ai_tasks = decompose_goal(request.goal)
+    # 1. Planner Agent (Sequential - must happen first)
+    ai_tasks = await decompose_goal(request.goal)
     if not ai_tasks:
         ai_tasks = [{"title": "Initial Action", "description": "Define the first step for this goal.", "duration": "15m"}]
     
-    # 2. Friction/Monitor Agent
-    intervention = detect_friction(request.goal, ai_tasks)
+    # 2 & 3. Run Monitor and Evaluator Agent concurrently to reduce latency
+    # Both depend on ai_tasks
+    intervention_task = detect_friction(request.goal, ai_tasks)
+    eval_task = evaluate_plan(request.goal, ai_tasks)
     
-    # 3. Evaluation Agent (Real scoring)
-    scores = evaluate_plan(request.goal, ai_tasks)
+    intervention, scores = await asyncio.gather(intervention_task, eval_task)
     
     # 4. Categorization logic
     goal_lower = request.goal.lower()
@@ -110,8 +122,20 @@ def create_plan(request: GoalRequest):
     
     # Retrieve the ACTUAL Opik Trace ID for this request
     # This ensures the 'View in Comet' link actually works.
-    trace_id = opik.get_current_trace_id() or str(uuid.uuid4())
+    from opik import opik_context
+    trace_data = opik_context.get_current_trace_data()
+    trace_id = trace_data.id if trace_data else str(uuid.uuid4())
     
+    if trace_data:
+        try:
+            opik_context.update_current_trace(feedback_scores=[
+                {"name": "actionability", "value": scores.get("actionability", 4.0)},
+                {"name": "relevance", "value": scores.get("relevance", 4.0)},
+                {"name": "helpfulness", "value": scores.get("helpfulness", 4.0)}
+            ])
+        except Exception as e:
+            print(f"Opik Update Warning: {e}")
+
     return {
         "id": str(uuid.uuid4())[:8],
         "trace_id": trace_id,

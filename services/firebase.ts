@@ -3,7 +3,8 @@ import { initializeApp } from "firebase/app";
 import { 
   getAuth, 
   GoogleAuthProvider, 
-  GithubAuthProvider, 
+  GithubAuthProvider,
+  TwitterAuthProvider,
   signInWithPopup, 
   signOut,
   onAuthStateChanged
@@ -26,7 +27,7 @@ const firebaseConfig = {
 
 // Check if keys are still placeholders. 
 // Firebase throws a hard error if initialized with "YOUR_API_KEY", causing a blank screen.
-const isRealConfig = firebaseConfig.apiKey !== "AIzaSyA_F3-1BPpnm4T04L7tRQGn1ElloKKHKIU" && firebaseConfig.apiKey !== "";
+const isRealConfig = firebaseConfig.apiKey !== "YOUR_API_KEY" && firebaseConfig.apiKey !== "";
 
 const app = initializeApp(isRealConfig ? firebaseConfig : {
   apiKey: "mock-api-key-to-prevent-crash",
@@ -38,5 +39,6 @@ export const auth = getAuth(app);
 
 export const googleProvider = new GoogleAuthProvider();
 export const githubProvider = new GithubAuthProvider();
+export const twitterProvider = new TwitterAuthProvider();
 
 export { signInWithPopup, signOut, onAuthStateChanged };
