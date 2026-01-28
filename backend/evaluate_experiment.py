@@ -4,7 +4,6 @@ import sys
 # Ensure the backend directory is in the path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-import asyncio
 import opik
 from opik.evaluation import evaluate
 from opik.evaluation.metrics import AnswerRelevance, Hallucination
@@ -17,8 +16,7 @@ load_dotenv()
 def evaluation_task(x):
     # x is an item from our dataset
     goal = x['goal']
-    # decompose_goal is now async
-    result = asyncio.run(decompose_goal(goal))
+    result = decompose_goal(goal)
     # Return the result in a format that metrics can use
     # Most Opik metrics expect 'output' and 'input' or 'context'
     return {

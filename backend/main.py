@@ -127,14 +127,11 @@ async def create_plan(request: GoalRequest):
     trace_id = trace_data.id if trace_data else str(uuid.uuid4())
     
     if trace_data:
-        try:
-            opik_context.update_current_trace(feedback_scores=[
-                {"name": "actionability", "value": scores.get("actionability", 4.0)},
-                {"name": "relevance", "value": scores.get("relevance", 4.0)},
-                {"name": "helpfulness", "value": scores.get("helpfulness", 4.0)}
-            ])
-        except Exception as e:
-            print(f"Opik Update Warning: {e}")
+        opik_context.update_current_trace(feedback_scores=[
+            {"name": "actionability", "value": scores.get("actionability", 4.0)},
+            {"name": "relevance", "value": scores.get("relevance", 4.0)},
+            {"name": "helpfulness", "value": scores.get("helpfulness", 4.0)}
+        ])
 
     return {
         "id": str(uuid.uuid4())[:8],
