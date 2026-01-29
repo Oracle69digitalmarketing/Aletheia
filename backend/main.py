@@ -132,7 +132,7 @@ async def get_history(user_email: str, db: Session = Depends(get_db)):
 @app.post("/api/plan", response_model=PlanResponse)
 @track(name="generate_plan_workflow")
 async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
-    start_time = time.time()
+    start_time = time.monotonic()
 
     # 1. Planner Agent
     ai_tasks = await decompose_goal(request.goal)
