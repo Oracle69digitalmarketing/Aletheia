@@ -32,7 +32,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://aletheia-ruddy.vercel.app",  # For Vercel frontend
+        "https://aletheia-ruddy.vercel.app/", # For Vercel frontend (trailing slash)
+        "http://localhost:5173",  # For local dev
+        "http://localhost:3000",  # For local dev alternative
+        "http://localhost:3001",  # For local dev alternative 2
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -59,11 +65,6 @@ async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
         content={"detail": str(exc), "type": type(exc).__name__},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
-        }
     )
     
 class GoalRequest(BaseModel):
@@ -159,21 +160,8 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
         except Exception as e:
             print(f"Opik Update Warning: {e}")
 
-    # Print results as requested
-    print("\n" + "="*50)
-    print(f"PLAN GENERATED FOR: {request.goal}")
-    print(f"Category: {category}")
-    print(f"Tasks ({len(ai_tasks)}):")
-    for t in ai_tasks:
-        print(f"  - {t.get('title')} ({t.get('duration')})")
-    print(f"Friction Intervention: {intervention}")
-    print(f"Scores: {scores}")
-    print(f"Trace URL: {get_trace_url(trace_id)}")
-    print("="*50 + "\n")
-
-    plan_id = str(uuid.uuid4())[:8]
-    response_data = {
-        "id": plan_id,
+    return {
+        "id": str(uuid.uuid4())[:8],
         "trace_id": trace_id,
         "trace_url": get_trace_url(trace_id),
         "category": category,

@@ -7,43 +7,32 @@ from opik import track
 from opik.integrations.genai import track_genai
 from typing import Dict
 
-MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
+MODELS = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro']
 
-def get_client():
+def get_model(model_name=None):
     api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key:
-        raise ValueError("CRITICAL: GOOGLE_API_KEY is missing from environment.")
-    client = genai.Client(api_key=api_key)
-    return track_genai(client)
+    genai.configure(api_key=api_key)
+    return genai.GenerativeModel(model_name or MODELS[0])
 
 @track(name="evaluator_ensemble")
-async def evaluate_plan(goal: str, tasks: list) -> Dict[str, float]:
+def evaluate_plan(goal: str, tasks: list) -> Dict[str, float]:
     """Runs all 3 evaluations in a single LLM call to reduce latency."""
     tasks_str = json.dumps(tasks)
     prompt = f"""
     You are the Aletheia Evaluator Ensemble.
     Score the following plan for the goal: "{goal}"
     Plan: {tasks_str}
-    
+
     Provide exactly three scores from 0.0 to 5.0 for:
     1. actionability (Productivity Judge: how easy is it to start?)
     2. relevance (Strategic Judge: does it actually achieve the goal?)
     3. helpfulness (Coaching Judge: is the advice high quality?)
-    
+
     Return ONLY a JSON object: {{"actionability": X.X, "relevance": X.X, "helpfulness": X.X}}
     """
     try:
-        try:
-            client = get_client()
-        except ValueError as e:
-            print(f"Evaluator Agent Configuration Error: {e}")
-            return {"actionability": 4.5, "relevance": 4.8, "helpfulness": 4.7}
-
-        response = await asyncio.to_thread(
-            client.models.generate_content,
-            model=MODELS[0],
-            contents=prompt
-        )
+        model = get_model()
+        response = model.generate_content(prompt)
         text = response.text.strip()
 
         # Robust JSON extraction

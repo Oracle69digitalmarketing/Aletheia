@@ -32,10 +32,14 @@ export const generateAgenticPlan = async (goal: string): Promise<Plan> => {
       throw new Error("Invalid response format from Aletheia Engine.");
     }
 
+    if (!data || !data.tasks || !data.metrics) {
+      throw new Error("Invalid response format from Aletheia Engine.");
+    }
+
     const logs: LogEntry[] = [
       { id: '1', timestamp: new Date().toLocaleTimeString(), level: 'INFO', source: 'SYSTEM', message: `POST /api/plan 200 OK` },
       { id: '2', timestamp: new Date().toLocaleTimeString(), level: 'TRACE', source: 'OPIK', message: `Trace ID [${data.trace_id || 'N/A'}] synchronized.` },
-      { id: '3', timestamp: new Date().toLocaleTimeString(), level: 'DEBUG', source: 'EVALUATOR', message: `Scoring complete: Rel ${data.metrics?.relevance || 'N/A'}` },
+      { id: '3', timestamp: new Date().toLocaleTimeString(), level: 'DEBUG', source: 'EVALUATOR', message: `Scoring complete: Rel ${data.metrics.relevance || 'N/A'}` },
     ];
 
     return {
