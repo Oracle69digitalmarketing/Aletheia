@@ -20,10 +20,13 @@ from fastapi import Depends
 
 load_dotenv()
 
-# Configure Opik explicitly from environment variables with fallbacks
-def configure_opik():
-    api_key = os.getenv("OPIK_API_KEY")
-    workspace = os.getenv("OPIK_WORKSPACE")
+# Configure Opik explicitly from environment variables
+opik.configure(
+    api_key=os.getenv("OPIK_API_KEY"),
+    workspace=os.getenv("OPIK_WORKSPACE")
+)
+
+app = FastAPI(title="Aletheia Backend")
 
     # Ignore placeholder keys
     if api_key and ("your_" in api_key or "api_key" in api_key.lower()):
@@ -46,12 +49,7 @@ app = FastAPI(title="Aletheia Backend")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://aletheia-ruddy.vercel.app",
-        "https://aletheia-ruddy-vercel-app.vercel.app", # common vercel naming
-        "http://localhost:5173",
-        "http://localhost:3000"
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -75,18 +73,16 @@ async def health():
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    origin = request.headers.get("Origin", "*")
     return JSONResponse(
         status_code=500,
         content={"detail": str(exc), "type": type(exc).__name__},
         headers={
-            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "*",
             "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Credentials": "true",
         }
     )
-
+    
 class GoalRequest(BaseModel):
     goal: str
     user_email: Optional[str] = "anonymous"
@@ -145,10 +141,10 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
 
     # 2. Friction/Monitor Agent
     intervention = await detect_friction(request.goal, ai_tasks)
-
+    
     # 3. Evaluation Agent (Real scoring)
     scores = await evaluate_plan(request.goal, ai_tasks)
-
+    
     # 4. Categorization logic
     goal_lower = request.goal.lower()
     category = "Personal Development"
@@ -169,7 +165,7 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     from opik import opik_context
     trace_data = opik_context.get_current_trace_data()
     trace_id = trace_data.id if trace_data else str(uuid.uuid4())
-
+    
     if trace_data:
         try:
             opik_context.update_current_trace(feedback_scores=[
