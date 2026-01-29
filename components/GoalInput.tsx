@@ -29,32 +29,34 @@ const GoalInput: React.FC<GoalInputProps> = ({ onPlanGenerated, isLoading }) => 
         <h2 className="text-2xl font-bold text-slate-800 mb-2">What is your commitment?</h2>
         <p className="text-slate-500 mb-8">Tell Aletheia your New Year's resolution. Our agents will decompose it into a proactive strategy.</p>
         
-        <form onSubmit={handleSubmit} className="relative mb-6">
-          <input
-            type="text"
-            value={goal}
-            onChange={(e) => setGoal(e.target.value)}
-            disabled={isLoading}
-            placeholder="e.g. Learn to code and get a job in 2024"
-            className="w-full pl-6 pr-32 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-lg"
-          />
-          <button
-            type="submit"
-            disabled={isLoading || !goal.trim()}
-            className="absolute right-2 top-2 bottom-2 bg-indigo-600 text-white px-6 rounded-lg font-bold hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-          >
-            {isLoading ? (
-              <>
-                <i className="fa-solid fa-spinner animate-spin"></i>
-                Planning...
-              </>
-            ) : (
-              <>
-                Generate
-                <i className="fa-solid fa-wand-magic-sparkles"></i>
-              </>
-            )}
-          </button>
+        <form onSubmit={handleSubmit} className="mb-6">
+          <div className="relative flex flex-col sm:block">
+            <textarea
+              value={goal}
+              onChange={(e) => setGoal(e.target.value)}
+              disabled={isLoading}
+              placeholder="e.g. Learn to code and get a job in 2026"
+              rows={2}
+              className="w-full pl-6 pr-6 sm:pr-40 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-base sm:text-lg resize-none min-h-[100px]"
+            />
+            <button
+              type="submit"
+              disabled={isLoading || !goal.trim()}
+              className="sm:absolute right-2 bottom-2 bg-indigo-600 text-white px-6 py-3 sm:py-2.5 rounded-lg font-bold hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-sm sm:text-base mt-3 sm:mt-0 w-full sm:w-auto"
+            >
+              {isLoading ? (
+                <>
+                  <i className="fa-solid fa-spinner animate-spin"></i>
+                  Planning...
+                </>
+              ) : (
+                <>
+                  Generate
+                  <i className="fa-solid fa-wand-magic-sparkles"></i>
+                </>
+              )}
+            </button>
+          </div>
         </form>
 
         <div className="flex flex-wrap gap-2">

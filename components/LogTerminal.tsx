@@ -6,41 +6,52 @@ interface LogTerminalProps {
   goal: string;
 }
 
+const mockLogsTemplates = [
+  { level: 'INFO', source: 'SYSTEM', message: 'Initializing Aletheia Agentic Workflow for: "{goal}"' },
+  { level: 'TRACE', source: 'OPIK', message: 'Trace context created. Session ID: {session}' },
+  { level: 'DEBUG', source: 'PLANNER', message: 'Analyzing goal structure and semantic intent...' },
+  { level: 'INFO', source: 'PLANNER', message: 'Decomposing milestones based on gemini-1.5-flash reasoning engine.' },
+  { level: 'DEBUG', source: 'MONITOR', message: 'Scanning for psychological friction and habit blockers...' },
+  { level: 'INFO', source: 'MONITOR', message: 'Predictive friction analysis complete. Generating intervention.' },
+  { level: 'DEBUG', source: 'ORCHESTRATOR', message: 'Calculating optimal task sequences and dependencies.' },
+  { level: 'TRACE', source: 'OPIK', message: 'Pushing intermediate reasoning span to Comet dashboard.' },
+  { level: 'INFO', source: 'EVALUATOR', message: 'Running Actionability and Relevance judge.' },
+  { level: 'DEBUG', source: 'SYSTEM', message: 'Finalizing response structure and formatting tasks...' },
+];
+
 const LogTerminal: React.FC<LogTerminalProps> = ({ goal }) => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  const mockLogs = [
-    { level: 'INFO', source: 'SYSTEM', message: `Initializing Aletheia Agentic Workflow for: "${goal}"` },
-    { level: 'TRACE', source: 'OPIK', message: 'Trace context created. Session ID: ' + Math.random().toString(36).substr(2, 9) },
-    { level: 'DEBUG', source: 'PLANNER', message: 'Analyzing goal structure and semantic intent...' },
-    { level: 'INFO', source: 'PLANNER', message: 'Decomposing milestones based on gemini-3-flash reasoning engine.' },
-    { level: 'DEBUG', source: 'MONITOR', message: 'Scanning for psychological friction and habit blockers...' },
-    { level: 'INFO', source: 'MONITOR', message: 'Predictive friction analysis complete. Generating intervention.' },
-    { level: 'DEBUG', source: 'ORCHESTRATOR', message: 'Calculating optimal task sequences and dependencies.' },
-    { level: 'TRACE', source: 'OPIK', message: 'Pushing intermediate reasoning span to Comet dashboard.' },
-    { level: 'INFO', source: 'EVALUATOR', message: 'Running Actionability and Relevance judge.' },
-    { level: 'DEBUG', source: 'SYSTEM', message: 'Finalizing response structure and formatting tasks...' },
-  ];
+  const [mockLogsCount, setMockLogsCount] = useState(mockLogsTemplates.length);
 
   useEffect(() => {
+    const sessionId = Math.random().toString(36).substr(2, 9);
+    const mockLogs = mockLogsTemplates.map(log => ({
+      ...log,
+      message: log.message.replace('{goal}', goal).replace('{session}', sessionId)
+    }));
+    setMockLogsCount(mockLogs.length);
+
     let index = 0;
     const interval = setInterval(() => {
       if (index < mockLogs.length) {
-        setLogs(prev => [...prev, {
-          id: Math.random().toString(36),
-          timestamp: new Date().toLocaleTimeString(),
-          level: mockLogs[index].level as any,
-          source: mockLogs[index].source,
-          message: mockLogs[index].message
-        }]);
+        const currentMock = mockLogs[index];
+        if (currentMock) {
+          setLogs(prev => [...prev, {
+            id: Math.random().toString(36).substr(2, 9),
+            timestamp: new Date().toLocaleTimeString(),
+            level: (currentMock.level || 'INFO') as any,
+            source: currentMock.source || 'SYSTEM',
+            message: currentMock.message || ''
+          }]);
+        }
         index++;
       } else {
         clearInterval(interval);
       }
     }, 500);
     return () => clearInterval(interval);
-  }, []);
+  }, [goal]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -74,7 +85,7 @@ const LogTerminal: React.FC<LogTerminalProps> = ({ goal }) => {
             <span className="text-slate-300">{log.message}</span>
           </div>
         ))}
-        {logs.length < mockLogs.length && (
+        {logs.length < mockLogsCount && (
           <div className="flex gap-2 items-center text-slate-500 italic">
             <span className="animate-bounce">_</span>
             <span>Waiting for agent response...</span>
