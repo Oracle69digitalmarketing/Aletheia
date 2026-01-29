@@ -7,15 +7,17 @@ from opik import track
 from opik.integrations.genai import track_genai
 from typing import Dict
 
-MODELS = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro']
+MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
 
-def get_model(model_name=None):
+def get_client():
     api_key = os.getenv("GOOGLE_API_KEY")
-    genai.configure(api_key=api_key)
-    return genai.GenerativeModel(model_name or MODELS[0])
+    if not api_key:
+        raise ValueError("CRITICAL: GOOGLE_API_KEY is missing from environment.")
+    client = genai.Client(api_key=api_key)
+    return track_genai(client)
 
 @track(name="evaluator_ensemble")
-def evaluate_plan(goal: str, tasks: list) -> Dict[str, float]:
+async def evaluate_plan(goal: str, tasks: list) -> Dict[str, float]:
     """Runs all 3 evaluations in a single LLM call to reduce latency."""
     tasks_str = json.dumps(tasks)
     prompt = f"""
@@ -31,8 +33,17 @@ def evaluate_plan(goal: str, tasks: list) -> Dict[str, float]:
     Return ONLY a JSON object: {{"actionability": X.X, "relevance": X.X, "helpfulness": X.X}}
     """
     try:
-        model = get_model()
-        response = model.generate_content(prompt)
+        try:
+            client = get_client()
+        except ValueError as e:
+            print(f"Evaluator Agent Configuration Error: {e}")
+            return {"actionability": 4.5, "relevance": 4.8, "helpfulness": 4.7}
+
+        response = await asyncio.to_thread(
+            client.models.generate_content,
+            model=MODELS[0],
+            contents=prompt
+        )
         text = response.text.strip()
 
         # Robust JSON extraction

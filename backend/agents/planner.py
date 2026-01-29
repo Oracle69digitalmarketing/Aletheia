@@ -8,18 +8,17 @@ from opik.integrations.genai import track_genai
 from typing import List, Dict, Optional
 
 # Model fallbacks for robustness
-MODELS = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro']
+MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
 
-def get_model(model_name=None):
+def get_client():
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
         raise ValueError("CRITICAL: GOOGLE_API_KEY is missing from environment.")
-    
-    genai.configure(api_key=api_key)
-    return genai.GenerativeModel(model_name or MODELS[0])
+    client = genai.Client(api_key=api_key)
+    return track_genai(client)
 
 @track(name="planner_agent")
-def decompose_goal(goal: str) -> List[Dict]:
+async def decompose_goal(goal: str) -> List[Dict]:
     prompt = f"""
     You are the Aletheia Planner Agent. 
     Decompose the following resolution into exactly 3 highly actionable, SMART tasks.
@@ -28,18 +27,27 @@ def decompose_goal(goal: str) -> List[Dict]:
     Return ONLY a valid JSON list of objects with keys: "title", "description", "duration".
     Do not include markdown formatting like ```json.
     """
-    model = None
+    try:
+        client = get_client()
+    except ValueError as e:
+        print(f"Planner Agent Configuration Error: {e}")
+        return []
+
+    text = ""
     for m_name in MODELS:
         try:
-            model = get_model(m_name)
-            response = model.generate_content(prompt)
+            response = await asyncio.to_thread(
+                client.models.generate_content,
+                model=m_name,
+                contents=prompt
+            )
             text = response.text.strip()
-            break
+            if text: break
         except Exception as e:
-            print(f"Fallback: Model {m_name} failed: {e}")
+            print(f"Planner Fallback: Model {m_name} failed: {e}")
             continue
 
-    if not model:
+    if not text:
         return []
 
     try:
@@ -57,7 +65,7 @@ def decompose_goal(goal: str) -> List[Dict]:
         return []
 
 @track(name="friction_agent")
-def detect_friction(goal: str, tasks: List[Dict]) -> str:
+async def detect_friction(goal: str, tasks: List[Dict]) -> str:
     tasks_str = ", ".join([t['title'] for t in tasks])
     prompt = f"""
     You are the Aletheia Monitor Agent. 
@@ -65,11 +73,19 @@ def detect_friction(goal: str, tasks: List[Dict]) -> str:
     Predict the most likely point of failure or "friction" the user will face.
     Provide a one-sentence, encouraging, yet firm intervention quote.
     """
-    model = None
+    try:
+        client = get_client()
+    except ValueError as e:
+        print(f"Monitor Agent Configuration Error: {e}")
+        return "I'll be monitoring your progress closely."
+
     for m_name in MODELS:
         try:
-            model = get_model(m_name)
-            response = model.generate_content(prompt)
+            response = await asyncio.to_thread(
+                client.models.generate_content,
+                model=m_name,
+                contents=prompt
+            )
             return response.text.strip()
         except Exception as e:
             print(f"Monitor Fallback: Model {m_name} failed: {e}")
