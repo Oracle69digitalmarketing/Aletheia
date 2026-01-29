@@ -49,14 +49,47 @@ const PlanDisplay: React.FC<PlanDisplayProps> = ({ plan }) => {
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
       <div className="lg:col-span-8 space-y-6">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-            <h3 className="font-bold text-slate-800 flex items-center gap-2">
-              <i className="fa-solid fa-route text-indigo-600"></i>
-              Execution Strategy
-            </h3>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              {tasks.length} Action Items
-            </span>
+          <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-wrap justify-between items-center gap-4">
+            <div className="flex items-center gap-4">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2 text-lg">
+                <i className="fa-solid fa-route text-indigo-600"></i>
+                Execution Strategy
+              </h3>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">
+                {tasks.length} Action Items
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 no-print">
+              <button
+                onClick={() => window.print()}
+                className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all border border-transparent hover:border-indigo-100"
+                title="Print Strategy"
+              >
+                <i className="fa-solid fa-print"></i>
+              </button>
+              <div className="h-4 w-px bg-slate-200 mx-1"></div>
+              <button
+                onClick={() => {
+                  const text = `Check out my goal strategy on Aletheia: ${plan.originalGoal}`;
+                  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+                }}
+                className="p-2 text-slate-500 hover:text-sky-500 hover:bg-sky-50 rounded-lg transition-all"
+                title="Share on X"
+              >
+                <i className="fa-brands fa-twitter"></i>
+              </button>
+              <button
+                onClick={() => {
+                  const url = window.location.href;
+                  window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
+                }}
+                className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                title="Share on LinkedIn"
+              >
+                <i className="fa-brands fa-linkedin-in"></i>
+              </button>
+            </div>
           </div>
           
           <div className="divide-y divide-slate-100">
@@ -113,19 +146,44 @@ const PlanDisplay: React.FC<PlanDisplayProps> = ({ plan }) => {
           </div>
         </div>
 
-        <div className="bg-indigo-900 rounded-2xl p-6 text-white relative overflow-hidden shadow-lg border border-indigo-700">
-          <div className="relative z-10 flex gap-4 items-start">
-            <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-300 border border-indigo-400/20">
-              <i className="fa-solid fa-shield-halved"></i>
+        <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl p-8 text-white relative overflow-hidden shadow-xl border border-indigo-700/50">
+          <div className="relative z-10 space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-300 border border-indigo-400/20 shadow-inner">
+                <i className="fa-solid fa-shield-halved text-xl"></i>
+              </div>
+              <div>
+                <h4 className="font-black text-lg tracking-tight">Agentic Strategic Guidance</h4>
+                <p className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Real-time commitment preservation</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-1">Monitor Agent Intervention</p>
-              <p className="text-sm text-indigo-50 leading-relaxed italic">
+
+            <div className="bg-white/5 rounded-2xl p-5 border border-white/10 backdrop-blur-sm">
+              <p className="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse"></span>
+                Predictive Intervention
+              </p>
+              <p className="text-base text-indigo-50 leading-relaxed font-medium italic">
                 "{plan.frictionIntervention}"
               </p>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 rounded-2xl bg-slate-800/40 border border-white/5">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Planner Suggestion</p>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {plan.agentReasoning.find(r => r.agent === 'Planner')?.thought || "Focus on granular consistency over intensity."}
+                </p>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-800/40 border border-white/5">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Evaluator Insight</p>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {plan.agentReasoning.find(r => r.agent === 'Evaluator')?.thought || "This plan maximizes relevance to your long-term vision."}
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="absolute -right-4 -bottom-4 opacity-10 text-9xl">
+          <div className="absolute -right-8 -bottom-8 opacity-10 text-[12rem] pointer-events-none">
             <i className="fa-solid fa-robot"></i>
           </div>
         </div>
@@ -154,6 +212,17 @@ const PlanDisplay: React.FC<PlanDisplayProps> = ({ plan }) => {
                  <div className="text-lg font-bold text-slate-800">{tasks.length}</div>
                </div>
              </div>
+          </div>
+          <div className="mt-6 no-print">
+            <button
+              onClick={() => {
+                alert("Reminders set! We'll help you stay on track with your resolution.");
+              }}
+              className="w-full py-3 px-4 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-100 transition-all shadow-sm"
+            >
+              <i className="fa-solid fa-bell"></i>
+              Enable Smart Reminders
+            </button>
           </div>
         </div>
 

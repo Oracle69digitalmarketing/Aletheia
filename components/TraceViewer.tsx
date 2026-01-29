@@ -59,7 +59,7 @@ const TraceViewer: React.FC<TraceViewerProps> = ({ plan }) => {
       <div className="p-6 space-y-3 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 bg-black/20">
         {isDefaultConfig && (
           <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded text-amber-200 leading-relaxed">
-            <span className="font-bold">[SYSTEM WARNING]:</span> Trace URL is using 'default' workspace. Ensure COMET_WORKSPACE and COMET_API_KEY are set in your backend .env file to view traces on Comet.com.
+            <span className="font-bold">[SYSTEM WARNING]:</span> Trace URL is using 'default' workspace. Ensure OPIK_WORKSPACE and OPIK_API_KEY are set in your backend .env file to view traces on Comet.com.
           </div>
         )}
 

@@ -95,24 +95,62 @@ const Dashboard: React.FC<DashboardProps> = ({ onPlanUpdate, user }) => {
                 </div>
               )}
             </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-3xl p-8 flex items-center gap-6 no-print">
+              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-amber-500 shadow-sm shrink-0 border border-amber-100">
+                <i className="fa-solid fa-lightbulb text-2xl"></i>
+              </div>
+              <div>
+                <h5 className="font-black text-amber-900 text-lg">Pro Tip for Consistency</h5>
+                <p className="text-amber-800 leading-relaxed font-medium">
+                  Don't wait for motivation to strike. The strategy above is designed by agents to be actionable even on your low-energy days.
+                  <span className="block mt-1 font-bold">Try to complete at least one task today to build momentum.</span>
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
         {!currentPlan && !isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-10">
-            {[
-              { icon: 'fa-microchip', title: 'Agentic Ensemble', desc: 'Planner, Orchestrator, and Monitor agents work together to validate your goal.' },
-              { icon: 'fa-eye', title: 'Real Opik Tracing', desc: 'Every reasoning step is pushed to your Comet workspace for production-grade observability.' },
-              { icon: 'fa-shield-heart', title: 'Friction Detection', desc: 'Our agents proactively identify obstacles before they derail your commitment.' }
-            ].map((feature, i) => (
-              <div key={i} className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl hover:border-indigo-100 transition-all group">
-                <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-[1.25rem] flex items-center justify-center text-2xl mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                  <i className={`fa-solid ${feature.icon}`}></i>
-                </div>
-                <h3 className="text-xl font-black text-slate-800 mb-3 tracking-tight">{feature.title}</h3>
-                <p className="text-slate-600 text-sm leading-relaxed font-medium">{feature.desc}</p>
+          <div className="space-y-12">
+            <div className="bg-indigo-50 border border-indigo-100 rounded-3xl p-8 flex flex-col md:flex-row items-center gap-8 shadow-sm">
+              <div className="flex-1 space-y-4 text-center md:text-left">
+                <h2 className="text-2xl font-black text-slate-900">How Aletheia helps you stay on track</h2>
+                <ul className="space-y-3">
+                  <li className="flex items-center gap-3 text-slate-600 font-medium justify-center md:justify-start">
+                    <i className="fa-solid fa-check-circle text-emerald-500"></i>
+                    Decompose vague resolutions into hourly tasks.
+                  </li>
+                  <li className="flex items-center gap-3 text-slate-600 font-medium justify-center md:justify-start">
+                    <i className="fa-solid fa-check-circle text-emerald-500"></i>
+                    Predict mental friction and provide custom interventions.
+                  </li>
+                  <li className="flex items-center gap-3 text-slate-600 font-medium justify-center md:justify-start">
+                    <i className="fa-solid fa-check-circle text-emerald-500"></i>
+                    Observe agentic reasoning in real-time via Opik.
+                  </li>
+                </ul>
               </div>
-            ))}
+              <div className="w-full md:w-64 aspect-video bg-white rounded-2xl border border-indigo-100 shadow-inner flex items-center justify-center text-indigo-400">
+                <i className="fa-solid fa-wand-magic-sparkles text-5xl animate-pulse"></i>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-10">
+              {[
+                { icon: 'fa-microchip', title: 'Agentic Ensemble', desc: 'Planner, Orchestrator, and Monitor agents work together to validate your goal.' },
+                { icon: 'fa-eye', title: 'Real Opik Tracing', desc: 'Every reasoning step is pushed to your Comet workspace for production-grade observability.' },
+                { icon: 'fa-shield-heart', title: 'Friction Detection', desc: 'Our agents proactively identify obstacles before they derail your commitment.' }
+              ].map((feature, i) => (
+                <div key={i} className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl hover:border-indigo-100 transition-all group">
+                  <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-[1.25rem] flex items-center justify-center text-2xl mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                    <i className={`fa-solid ${feature.icon}`}></i>
+                  </div>
+                  <h3 className="text-xl font-black text-slate-800 mb-3 tracking-tight">{feature.title}</h3>
+                  <p className="text-slate-600 text-sm leading-relaxed font-medium">{feature.desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

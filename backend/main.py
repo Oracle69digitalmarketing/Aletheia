@@ -28,7 +28,24 @@ opik.configure(
 
 app = FastAPI(title="Aletheia Backend")
 
-from fastapi.middleware.cors import CORSMiddleware
+    # Ignore placeholder keys
+    if api_key and ("your_" in api_key or "api_key" in api_key.lower()):
+        api_key = None
+    if workspace and ("your_" in workspace or "workspace" in workspace.lower()):
+        workspace = None
+
+    if not api_key:
+        print("Opik API Key missing or placeholder. Tracing disabled.")
+        return
+
+    try:
+        opik.configure(api_key=api_key, workspace=workspace)
+    except Exception as e:
+        print(f"Opik Configuration Warning: {e}. Tracing might be limited.")
+
+configure_opik()
+
+app = FastAPI(title="Aletheia Backend")
 
 app.add_middleware(
     CORSMiddleware,
