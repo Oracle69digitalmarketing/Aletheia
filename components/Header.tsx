@@ -37,9 +37,9 @@ const Header: React.FC<HeaderProps> = ({ projectUrl, user, onConnect, onDisconne
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             {/* Logo Section */}
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-md shadow-indigo-200">
-                <i className="fa-solid fa-owl text-lg"></i>
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+              <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-indigo-100 border border-slate-100">
+                <img src="/logo.jpeg" alt="Aletheia Logo" className="w-full h-full object-cover" />
               </div>
               <span className="text-xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">
                 Aletheia
@@ -55,7 +55,7 @@ const Header: React.FC<HeaderProps> = ({ projectUrl, user, onConnect, onDisconne
                 Strategy
               </button>
               <a 
-                href="https://ai.google.dev/gemini-api/docs" 
+                href="https://github.com/oracle69digitalmarketing/aletheia/blob/main/docs/ALETHEIA.md"
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-slate-500 hover:text-indigo-600 transition-colors text-sm font-bold flex items-center gap-1.5"
@@ -170,7 +170,7 @@ const Header: React.FC<HeaderProps> = ({ projectUrl, user, onConnect, onDisconne
                 Dashboard
               </button>
               <a 
-                href="https://ai.google.dev/" 
+                href="https://github.com/oracle69digitalmarketing/aletheia/blob/main/docs/ALETHEIA.md"
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="w-full text-left px-4 py-3 text-slate-700 font-bold hover:bg-slate-50 rounded-xl flex items-center gap-3"
