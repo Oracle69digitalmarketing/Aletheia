@@ -48,7 +48,7 @@ def actionability_metric(output, **kwargs):
         tasks = json.loads(json_str)
         if isinstance(tasks, list) and len(tasks) > 0:
             return 1.0
-    except:
+    except json.JSONDecodeError:
         pass
     return 0.0
 

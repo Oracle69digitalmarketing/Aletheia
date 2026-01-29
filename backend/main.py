@@ -58,7 +58,7 @@ app.add_middleware(
 @app.api_route("/", methods=["GET", "HEAD"])
 async def root():
     return {
-        "message": "Aletheia Backend API", 
+        "message": "Aletheia Backend API",
         "status": "running",
         "endpoints": {
             "docs": "/docs",
@@ -132,13 +132,13 @@ async def get_history(user_email: str, db: Session = Depends(get_db)):
 @app.post("/api/plan", response_model=PlanResponse)
 @track(name="generate_plan_workflow")
 async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
-    start_time = time.time()
-    
+    start_time = time.monotonic()
+
     # 1. Planner Agent
     ai_tasks = await decompose_goal(request.goal)
     if not ai_tasks:
         ai_tasks = [{"title": "Initial Action", "description": "Define the first step for this goal.", "duration": "15m"}]
-    
+
     # 2. Friction/Monitor Agent
     intervention = await detect_friction(request.goal, ai_tasks)
     
@@ -151,15 +151,15 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     if any(w in goal_lower for w in ["learn", "code", "read", "study", "tech"]): category = "Knowledge"
     elif any(w in goal_lower for w in ["run", "gym", "health", "diet", "fitness", "sleep"]): category = "Wellness"
     elif any(w in goal_lower for w in ["job", "work", "career", "business", "money"]): category = "Professional"
-    
+
     reasoning = [
         AgentThought(agent="Planner", thought=f"Goal decomposed into {len(ai_tasks)} actionable spans."),
         AgentThought(agent="Evaluator", thought=f"Plan verified with high {scores.get('relevance')} relevance score."),
         AgentThought(agent="Monitor", thought="Friction detection complete. Predictive intervention generated.")
     ]
-    
+
     latency = int((time.time() - start_time) * 1000)
-    
+
     # Retrieve the ACTUAL Opik Trace ID for this request
     # This ensures the 'View in Comet' link actually works.
     from opik import opik_context
