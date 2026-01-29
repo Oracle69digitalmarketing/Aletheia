@@ -10,5 +10,16 @@
 <body class="bg-slate-50 text-slate-900 antialiased">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
+    <script>
+      // Fallback for blank white screen if module fails to load
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const root = document.getElementById('root');
+          if (root && root.innerHTML === '') {
+            console.error('App failed to render. Check console for errors.');
+          }
+        }, 1000);
+      });
+    </script>
 </body>
 </html>
