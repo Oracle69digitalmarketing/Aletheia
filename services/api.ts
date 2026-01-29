@@ -6,7 +6,7 @@ import { Plan, TaskStatus, LogEntry } from "../types";
  * Replace the string below with your actual Render backend URL 
  * (e.g., https://aletheia-backend.onrender.com)
  */
-const PRODUCTION_API_URL = "https://aletheia-backend-yu1n.onrender.com"; 
+const PRODUCTION_API_URL = "https://aletheia-backend-yu1n.onrender.com";
 
 const API_URL = import.meta.env.VITE_API_URL || PRODUCTION_API_URL;
 

@@ -20,14 +20,11 @@ from fastapi import Depends
 
 load_dotenv()
 
-# Configure Opik explicitly from environment variables with fallbacks
-try:
-    opik.configure(
-        api_key=os.getenv("OPIK_API_KEY") or os.getenv("COMET_API_KEY"),
-        workspace=os.getenv("OPIK_WORKSPACE") or os.getenv("COMET_WORKSPACE")
-    )
-except Exception as e:
-    print(f"Opik Configuration Warning: {e}. Tracing might be limited.")
+# Configure Opik explicitly from environment variables
+opik.configure(
+    api_key=os.getenv("OPIK_API_KEY"),
+    workspace=os.getenv("OPIK_WORKSPACE")
+)
 
 app = FastAPI(title="Aletheia Backend")
 

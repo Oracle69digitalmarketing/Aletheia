@@ -24,12 +24,12 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict[str, float]:
     You are the Aletheia Evaluator Ensemble.
     Score the following plan for the goal: "{goal}"
     Plan: {tasks_str}
-    
+
     Provide exactly three scores from 0.0 to 5.0 for:
     1. actionability (Productivity Judge: how easy is it to start?)
     2. relevance (Strategic Judge: does it actually achieve the goal?)
     3. helpfulness (Coaching Judge: is the advice high quality?)
-    
+
     Return ONLY a JSON object: {{"actionability": X.X, "relevance": X.X, "helpfulness": X.X}}
     """
     try:
