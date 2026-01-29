@@ -53,7 +53,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Header 
-        projectUrl={activePlan?.metrics.projectUrl} 
+        projectUrl={activePlan?.metrics?.projectUrl}
         user={user}
         onConnect={handleConnect}
         onDisconnect={handleDisconnect}
@@ -78,9 +78,9 @@ const App: React.FC = () => {
 
       <footer className="bg-white border-t border-slate-200 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-sm">
-              <i className="fa-solid fa-owl text-sm"></i>
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-slate-100">
+              <img src="/logo.jpeg" alt="Aletheia Logo" className="w-full h-full object-cover" />
             </div>
             <span className="text-slate-900 font-black text-xl tracking-tight">Aletheia</span>
           </div>
@@ -90,9 +90,10 @@ const App: React.FC = () => {
           </p>
           <div className="flex justify-center gap-6 mb-10">
             {[
-              { icon: 'fa-github', url: 'https://github.com/comet-ml/opik' },
-              { icon: 'fa-twitter', url: 'https://twitter.com/cometml' },
-              { icon: 'fa-discord', url: 'https://discord.gg/comet' }
+              { icon: 'fa-github', url: 'https://github.com/oracle69digitalmarketing' },
+              { icon: 'fa-twitter', url: 'https://x.com/sophiemabel69' },
+              { icon: 'fa-discord', url: 'https://discord.gg/vbZuNTNAd' },
+              { icon: 'fa-linkedin', url: 'https://www.linkedin.com/in/oracle69digitalmarketing' }
             ].map((social, i) => (
               <a 
                 key={i} 

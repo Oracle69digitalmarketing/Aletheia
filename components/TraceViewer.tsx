@@ -79,7 +79,7 @@ const TraceViewer: React.FC<TraceViewerProps> = ({ plan }) => {
           <div key={idx} className="space-y-1">
              <div className="flex gap-4">
               <span className="text-slate-600 shrink-0">{r.timestamp}</span>
-              <span className="text-sky-400 font-bold shrink-0">[{r.agent.toUpperCase()}]</span>
+              <span className="text-sky-400 font-bold shrink-0">[{(r.agent || 'Agent').toUpperCase()}]</span>
               <span className="text-slate-300 italic">"Span generated successfully"</span>
             </div>
             <div className="pl-16 text-slate-500 text-[11px] leading-relaxed border-l border-slate-800 ml-4 py-1">
