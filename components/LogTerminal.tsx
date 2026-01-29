@@ -6,6 +6,19 @@ interface LogTerminalProps {
   goal: string;
 }
 
+const mockLogsTemplates = [
+  { level: 'INFO', source: 'SYSTEM', message: 'Initializing Aletheia Agentic Workflow for: "{goal}"' },
+  { level: 'TRACE', source: 'OPIK', message: 'Trace context created. Session ID: {session}' },
+  { level: 'DEBUG', source: 'PLANNER', message: 'Analyzing goal structure and semantic intent...' },
+  { level: 'INFO', source: 'PLANNER', message: 'Decomposing milestones based on gemini-1.5-flash reasoning engine.' },
+  { level: 'DEBUG', source: 'MONITOR', message: 'Scanning for psychological friction and habit blockers...' },
+  { level: 'INFO', source: 'MONITOR', message: 'Predictive friction analysis complete. Generating intervention.' },
+  { level: 'DEBUG', source: 'ORCHESTRATOR', message: 'Calculating optimal task sequences and dependencies.' },
+  { level: 'TRACE', source: 'OPIK', message: 'Pushing intermediate reasoning span to Comet dashboard.' },
+  { level: 'INFO', source: 'EVALUATOR', message: 'Running Actionability and Relevance judge.' },
+  { level: 'DEBUG', source: 'SYSTEM', message: 'Finalizing response structure and formatting tasks...' },
+];
+
 const LogTerminal: React.FC<LogTerminalProps> = ({ goal }) => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -24,6 +37,13 @@ const LogTerminal: React.FC<LogTerminalProps> = ({ goal }) => {
   ];
 
   useEffect(() => {
+    const sessionId = Math.random().toString(36).substr(2, 9);
+    const mockLogs = mockLogsTemplates.map(log => ({
+      ...log,
+      message: log.message.replace('{goal}', goal).replace('{session}', sessionId)
+    }));
+    setMockLogsCount(mockLogs.length);
+
     let index = 0;
     const interval = setInterval(() => {
       if (index < mockLogs.length) {
@@ -77,7 +97,7 @@ const LogTerminal: React.FC<LogTerminalProps> = ({ goal }) => {
             <span className="text-slate-300">{log.message}</span>
           </div>
         ))}
-        {logs.length < mockLogs.length && (
+        {logs.length < mockLogsCount && (
           <div className="flex gap-2 items-center text-slate-500 italic">
             <span className="animate-bounce">_</span>
             <span>Waiting for agent response...</span>

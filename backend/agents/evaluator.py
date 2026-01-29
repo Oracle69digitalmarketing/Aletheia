@@ -1,8 +1,10 @@
 
 import os
 import json
-import google.generativeai as genai
+import asyncio
+from google import genai
 from opik import track
+from opik.integrations.genai import track_genai
 from typing import Dict
 
 MODELS = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro']

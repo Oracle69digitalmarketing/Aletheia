@@ -26,7 +26,11 @@ export const generateAgenticPlan = async (goal: string): Promise<Plan> => {
       throw new Error(errorData.detail || `Server responded with ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = await response.json().catch(() => null);
+
+    if (!data || !data.tasks) {
+      throw new Error("Invalid response format from Aletheia Engine.");
+    }
 
     if (!data || !data.tasks || !data.metrics) {
       throw new Error("Invalid response format from Aletheia Engine.");
@@ -44,7 +48,7 @@ export const generateAgenticPlan = async (goal: string): Promise<Plan> => {
       category: data.category || "General",
       tasks: (data.tasks || []).map((t: any) => ({
         ...t,
-        id: Math.random().toString(36).substr(2, 9),
+        id: t.id || Math.random().toString(36).substr(2, 9),
         status: TaskStatus.TODO,
         category: data.category || "General"
       })),
