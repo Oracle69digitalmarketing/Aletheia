@@ -5,10 +5,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def get_workspace():
-    return os.getenv("COMET_WORKSPACE", "default")
+    return os.getenv("OPIK_WORKSPACE", "oracle69digitalmarketing")
 
 def get_project():
-    return os.getenv("COMET_PROJECT", "aletheia-hackathon")
+    return os.getenv("OPIK_PROJECT", "aletheia-hackathon")
 
 def get_trace_url(trace_id: str):
     workspace = get_workspace()
