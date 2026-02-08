@@ -4,6 +4,7 @@ import sys
 # Ensure the backend directory is in the path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+import asyncio
 import opik
 import asyncio
 from opik.evaluation import evaluate

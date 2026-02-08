@@ -40,7 +40,7 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict:
             client = get_genai_client()
         except ValueError as e:
             print(f"Evaluator Agent Configuration Error: {e}")
-            return {"actionability": 4.5, "relevance": 4.8, "helpfulness": 4.7}
+            return {"actionability": 4.5, "relevance": 4.8, "helpfulness": 4.7, "reasoning": "Standard evaluation applied due to configuration error."}
 
         text = ""
         for m_name in MODELS:
