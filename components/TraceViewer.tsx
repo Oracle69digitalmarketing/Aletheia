@@ -7,7 +7,7 @@ interface TraceViewerProps {
 }
 
 const TraceViewer: React.FC<TraceViewerProps> = ({ plan }) => {
-  const isDefaultConfig = plan.traceUrl.includes('/default/');
+  const isDefaultConfig = plan.traceUrl.includes('/default/') || plan.traceUrl.includes('/oracle69digitalmarketing/');
 
   return (
     <div className="bg-[#0d1117] rounded-xl border border-slate-800 overflow-hidden shadow-2xl font-mono text-xs">
@@ -99,7 +99,7 @@ const TraceViewer: React.FC<TraceViewerProps> = ({ plan }) => {
       <div className="bg-[#161b22] px-6 py-4 border-t border-slate-800">
         <div className="flex justify-between items-center mb-4">
            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Model Performance</span>
-           <span className="text-[10px] text-indigo-400 font-mono">judge: gemini-3-flash-preview</span>
+           <span className="text-[10px] text-indigo-400 font-mono">judge: gemini-2.0-flash</span>
         </div>
         <div className="grid grid-cols-3 gap-8">
           {[
