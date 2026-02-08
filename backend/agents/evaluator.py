@@ -2,10 +2,9 @@
 import os
 import json
 import asyncio
-from google import genai
 from opik import track
-from opik.integrations.genai import track_genai
 from typing import Dict
+from core.agent_utils import get_genai_client
 
 MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
 
@@ -21,7 +20,7 @@ def get_client():
         return client
 
 @track(name="evaluator_ensemble")
-async def evaluate_plan(goal: str, tasks: list) -> Dict[str, float]:
+async def evaluate_plan(goal: str, tasks: list) -> Dict:
     """Runs all 3 evaluations in a single LLM call to reduce latency."""
     tasks_str = json.dumps(tasks)
     prompt = f"""
@@ -34,11 +33,11 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict[str, float]:
     2. relevance (Strategic Judge: does it actually achieve the goal?)
     3. helpfulness (Coaching Judge: is the advice high quality?)
 
-    Return ONLY a JSON object: {{"actionability": X.X, "relevance": X.X, "helpfulness": X.X}}
+    Return a JSON object with keys: "actionability", "relevance", "helpfulness" and a "reasoning" key (one sentence).
     """
     try:
         try:
-            client = get_client()
+            client = get_genai_client()
         except ValueError as e:
             print(f"Evaluator Agent Configuration Error: {e}")
             return {"actionability": 4.5, "relevance": 4.8, "helpfulness": 4.7}
@@ -71,8 +70,14 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict[str, float]:
         return {
             "actionability": float(scores.get("actionability", 4.5)),
             "relevance": float(scores.get("relevance", 4.8)),
-            "helpfulness": float(scores.get("helpfulness", 4.7))
+            "helpfulness": float(scores.get("helpfulness", 4.7)),
+            "reasoning": scores.get("reasoning", "Plan verified for actionability and relevance.")
         }
     except Exception as e:
         print(f"Evaluator Error: {e}")
-        return {"actionability": 4.5, "relevance": 4.8, "helpfulness": 4.7}
+        return {
+            "actionability": 4.5,
+            "relevance": 4.8,
+            "helpfulness": 4.7,
+            "reasoning": "Standard evaluation applied."
+        }

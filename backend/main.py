@@ -156,12 +156,20 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     start_time = time.time()
 
     # 1. Planner Agent
-    ai_tasks = await decompose_goal(request.goal)
+    try:
+        ai_tasks, planner_thought = await decompose_goal(request.goal)
+    except Exception as e:
+        # If the LLM fails, we raise an error instead of returning mock data
+        # this helps the user diagnose the issue (e.g. invalid API key)
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"Aletheia Planner Agent Error: {str(e)}")
+
     if not ai_tasks:
         ai_tasks = [{"title": "Initial Action", "description": "Define the first step for this goal.", "duration": "15m"}]
+        planner_thought = "Standardized fallback task generated due to empty model response."
 
     # 2. Friction/Monitor Agent
-    intervention = await detect_friction(request.goal, ai_tasks)
+    intervention, monitor_thought = await detect_friction(request.goal, ai_tasks)
     
     # 3. Evaluation Agent (Real scoring)
     scores = await evaluate_plan(request.goal, ai_tasks)
@@ -174,9 +182,9 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     elif any(w in goal_lower for w in ["job", "work", "career", "business", "money"]): category = "Professional"
 
     reasoning = [
-        AgentThought(agent="Planner", thought=f"Goal decomposed into {len(ai_tasks)} actionable spans."),
-        AgentThought(agent="Evaluator", thought=f"Plan verified with high {scores.get('relevance')} relevance score."),
-        AgentThought(agent="Monitor", thought="Friction detection complete. Predictive intervention generated.")
+        AgentThought(agent="Planner", thought=planner_thought),
+        AgentThought(agent="Evaluator", thought=scores.get("reasoning", "Plan verified for actionability and relevance.")),
+        AgentThought(agent="Monitor", thought=monitor_thought)
     ]
 
     latency = int((time.time() - start_time) * 1000)
