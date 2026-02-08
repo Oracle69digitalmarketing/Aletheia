@@ -40,6 +40,7 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
         raise e
 
     text = ""
+    last_error = ""
     for m_name in MODELS:
         try:
             response = await asyncio.to_thread(
@@ -50,6 +51,7 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
             text = response.text.strip()
             if text: break
         except Exception as e:
+            last_error = str(e)
             print(f"Planner Fallback: Model {m_name} failed: {e}")
             continue
 
@@ -101,6 +103,7 @@ async def detect_friction(goal: str, tasks: List[Dict]) -> Tuple[str, str]:
             text = response.text.strip()
             if text: break
         except Exception as e:
+            last_error = str(e)
             print(f"Monitor Fallback: Model {m_name} failed: {e}")
             continue
 

@@ -12,14 +12,21 @@ const API_URL = import.meta.env.VITE_API_URL || PRODUCTION_API_URL;
 
 export const generateAgenticPlan = async (goal: string): Promise<Plan> => {
   // Add a trailing slash check or ensure consistency
-  const endpoint = `${API_URL.replace(/\/$/, '')}/api/plan`;
+  const baseUrl = API_URL.replace(/\/$/, '');
+  const endpoint = `${baseUrl}/api/plan`;
   
+  // Create an AbortController for a 30s timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ goal })
+      body: JSON.stringify({ goal }),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ detail: 'Service Unreachable' }));
