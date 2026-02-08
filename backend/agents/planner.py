@@ -9,6 +9,17 @@ from core.agent_utils import get_genai_client
 # Model fallbacks for robustness
 MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
 
+def get_client():
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        raise ValueError("CRITICAL: GOOGLE_API_KEY is missing from environment.")
+    client = genai.Client(api_key=api_key)
+    try:
+        return track_genai(client)
+    except Exception as e:
+        print(f"Opik track_genai Warning: {e}. Tracing might be limited for GenAI calls.")
+        return client
+
 @track(name="planner_agent")
 async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
     prompt = f"""
@@ -43,7 +54,8 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
             continue
 
     if not text:
-        raise ValueError("Planner Agent Error: All models failed to generate tasks.")
+        print("Planner Agent Error: All models failed to generate tasks.")
+        return []
 
     try:
         # Simple JSON extraction logic if model ignores instruction
@@ -58,7 +70,7 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
     except Exception as e:
         print(f"Planner Agent JSON Error: {e}")
         print(f"Raw response text: {text}")
-        raise e
+        return []
 
 @track(name="friction_agent")
 async def detect_friction(goal: str, tasks: List[Dict]) -> Tuple[str, str]:

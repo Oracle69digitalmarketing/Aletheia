@@ -8,6 +8,17 @@ from core.agent_utils import get_genai_client
 
 MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
 
+def get_client():
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        raise ValueError("CRITICAL: GOOGLE_API_KEY is missing from environment.")
+    client = genai.Client(api_key=api_key)
+    try:
+        return track_genai(client)
+    except Exception as e:
+        print(f"Opik track_genai Warning: {e}. Tracing might be limited for GenAI calls.")
+        return client
+
 @track(name="evaluator_ensemble")
 async def evaluate_plan(goal: str, tasks: list) -> Dict:
     """Runs all 3 evaluations in a single LLM call to reduce latency."""
