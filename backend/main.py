@@ -20,13 +20,9 @@ from fastapi import Depends
 
 load_dotenv()
 
-# Configure Opik explicitly from environment variables
-opik.configure(
-    api_key=os.getenv("OPIK_API_KEY"),
-    workspace=os.getenv("OPIK_WORKSPACE")
-)
-
-app = FastAPI(title="Aletheia Backend")
+def configure_opik():
+    api_key = os.getenv("OPIK_API_KEY")
+    workspace = os.getenv("OPIK_WORKSPACE")
 
     # Ignore placeholder keys
     if api_key and ("your_" in api_key or "api_key" in api_key.lower()):
@@ -47,9 +43,15 @@ configure_opik()
 
 app = FastAPI(title="Aletheia Backend")
 
+allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "https://aletheia-ruddy.vercel.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -73,14 +75,21 @@ async def health():
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    origin = request.headers.get("origin")
+    headers = {
+        "Access-Control-Allow-Methods": "*",
+        "Access-Control-Allow-Headers": "*",
+        "Access-Control-Allow-Credentials": "true",
+    }
+    if origin in allowed_origins:
+        headers["Access-Control-Allow-Origin"] = origin
+    elif len(allowed_origins) > 0:
+        headers["Access-Control-Allow-Origin"] = allowed_origins[-1] # Fallback to production
+
     return JSONResponse(
         status_code=500,
         content={"detail": str(exc), "type": type(exc).__name__},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
-        }
+        headers=headers
     )
     
 class GoalRequest(BaseModel):
