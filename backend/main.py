@@ -44,6 +44,12 @@ configure_opik()
 
 app = FastAPI(title="Aletheia Backend")
 
+allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "https://aletheia-ruddy.vercel.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
