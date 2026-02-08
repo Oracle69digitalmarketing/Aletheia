@@ -15,7 +15,11 @@ def get_client():
     if not api_key:
         raise ValueError("CRITICAL: GOOGLE_API_KEY is missing from environment.")
     client = genai.Client(api_key=api_key)
-    return track_genai(client)
+    try:
+        return track_genai(client)
+    except Exception as e:
+        print(f"Opik track_genai Warning: {e}. Tracing might be limited for GenAI calls.")
+        return client
 
 @track(name="planner_agent")
 async def decompose_goal(goal: str) -> List[Dict]:
