@@ -17,9 +17,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onPlanUpdate, user }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [lastGoal, setLastGoal] = useState('');
   const [view, setView] = useState<'strategy' | 'trace'>('strategy');
+  const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async (goal: string) => {
     setIsLoading(true);
+    setError(null);
     setLastGoal(goal);
     try {
       const plan = await generateAgenticPlan(goal);
@@ -32,9 +34,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onPlanUpdate, user }) => {
           console.error("onPlanUpdate Error:", updateErr);
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert(`Aletheia Engine is currently unreachable at ${import.meta.env.VITE_API_URL || "the production URL"}. Please ensure the backend is active and CORS is allowed for ${window.location.origin}.`);
+      setError(err.message || "Aletheia Engine is currently unreachable.");
     } finally {
       setIsLoading(false);
     }
@@ -58,6 +60,28 @@ const Dashboard: React.FC<DashboardProps> = ({ onPlanUpdate, user }) => {
 
       <div className="space-y-12">
         <GoalInput onPlanGenerated={handleGenerate} isLoading={isLoading} />
+
+        {error && (
+          <div className="max-w-3xl mx-auto animate-in slide-in-from-top-4 duration-300">
+            <div className="bg-rose-50 border border-rose-200 rounded-3xl p-6 flex flex-col md:flex-row items-center gap-6 shadow-sm">
+              <div className="w-14 h-14 bg-rose-100 rounded-2xl flex items-center justify-center text-rose-600 shrink-0 border border-rose-200">
+                <i className="fa-solid fa-triangle-exclamation text-xl"></i>
+              </div>
+              <div className="flex-grow">
+                <h4 className="font-black text-rose-900 mb-1 text-lg">Engine Connection Failed</h4>
+                <p className="text-rose-800 font-medium leading-relaxed">
+                  {error}. Check if the backend is running and CORS allows {window.location.origin}.
+                </p>
+              </div>
+              <button
+                onClick={() => handleGenerate(lastGoal)}
+                className="px-6 py-3 bg-rose-600 text-white rounded-2xl font-bold text-sm hover:bg-rose-700 transition-colors shadow-lg shadow-rose-200 shrink-0"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
 
         {isLoading && (
           <div className="max-w-3xl mx-auto animate-in fade-in zoom-in-95 duration-300">
