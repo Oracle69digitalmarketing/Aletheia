@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def get_workspace():
-    return os.getenv("COMET_WORKSPACE", "oracle69digitalmarketing")
+    return os.getenv("OPIK_WORKSPACE", "oracle69digitalmarketing")
 
 def get_project():
     return os.getenv("OPIK_PROJECT", "aletheia-hackathon")

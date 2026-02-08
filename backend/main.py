@@ -20,13 +20,10 @@ from fastapi import Depends
 
 load_dotenv()
 
-# Configure Opik explicitly from environment variables
-opik.configure(
-    api_key=os.getenv("OPIK_API_KEY"),
-    workspace=os.getenv("OPIK_WORKSPACE")
-)
-
-app = FastAPI(title="Aletheia Backend")
+# Configure Opik explicitly from environment variables with fallbacks
+def configure_opik():
+    api_key = os.getenv("OPIK_API_KEY")
+    workspace = os.getenv("OPIK_WORKSPACE")
 
     # Ignore placeholder keys
     if api_key and ("your_" in api_key or "api_key" in api_key.lower()):
@@ -49,7 +46,12 @@ app = FastAPI(title="Aletheia Backend")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://aletheia-ruddy.vercel.app",
+        "https://aletheia-ruddy-vercel-app.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:3000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -73,13 +75,15 @@ async def health():
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    origin = request.headers.get("Origin", "*")
     return JSONResponse(
         status_code=500,
         content={"detail": str(exc), "type": type(exc).__name__},
         headers={
-            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Origin": origin,
             "Access-Control-Allow-Methods": "*",
             "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Credentials": "true",
         }
     )
     
@@ -132,7 +136,7 @@ async def get_history(user_email: str, db: Session = Depends(get_db)):
 @app.post("/api/plan", response_model=PlanResponse)
 @track(name="generate_plan_workflow")
 async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
-    start_time = time.monotonic()
+    start_time = time.time()
 
     # 1. Planner Agent
     ai_tasks = await decompose_goal(request.goal)
@@ -161,7 +165,6 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     latency = int((time.time() - start_time) * 1000)
 
     # Retrieve the ACTUAL Opik Trace ID for this request
-    # This ensures the 'View in Comet' link actually works.
     from opik import opik_context
     trace_data = opik_context.get_current_trace_data()
     trace_id = trace_data.id if trace_data else str(uuid.uuid4())
