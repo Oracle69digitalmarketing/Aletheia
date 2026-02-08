@@ -115,5 +115,5 @@ async def detect_friction(goal: str, tasks: List[Dict]) -> Tuple[str, str]:
             text = text.split("```")[0].strip()
         data = json.loads(text)
         return data.get("intervention", ""), data.get("reasoning", "Friction detection complete.")
-    except:
+    except Exception as e:
         return text, "Friction detection complete."
