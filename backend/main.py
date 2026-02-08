@@ -77,7 +77,18 @@ async def root():
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
-    return {"status": "healthy", "timestamp": time.time()}
+    google_api_key = os.getenv("GOOGLE_API_KEY")
+    opik_api_key = os.getenv("OPIK_API_KEY")
+
+    return {
+        "status": "healthy",
+        "timestamp": time.time(),
+        "diagnostics": {
+            "google_api_key_set": bool(google_api_key and "your_" not in google_api_key.lower()),
+            "opik_api_key_set": bool(opik_api_key and "your_" not in opik_api_key.lower()),
+            "opik_workspace": os.getenv("OPIK_WORKSPACE")
+        }
+    }
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
