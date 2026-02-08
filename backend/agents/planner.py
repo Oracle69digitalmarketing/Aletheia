@@ -48,10 +48,10 @@ async def decompose_goal(goal: str) -> List[Dict]:
             continue
 
     if not text:
+        print("Planner Agent Error: All models failed to generate tasks.")
         return []
 
     try:
-        
         # Simple JSON extraction logic if model ignores instruction
         if "```" in text:
             text = text.split("```")[1]
@@ -61,7 +61,8 @@ async def decompose_goal(goal: str) -> List[Dict]:
             
         return json.loads(text)
     except Exception as e:
-        print(f"Planner Agent Error: {e}")
+        print(f"Planner Agent JSON Error: {e}")
+        print(f"Raw response text: {text}")
         return []
 
 @track(name="friction_agent")

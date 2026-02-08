@@ -39,12 +39,22 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict[str, float]:
             print(f"Evaluator Agent Configuration Error: {e}")
             return {"actionability": 4.5, "relevance": 4.8, "helpfulness": 4.7}
 
-        response = await asyncio.to_thread(
-            client.models.generate_content,
-            model=MODELS[0],
-            contents=prompt
-        )
-        text = response.text.strip()
+        text = ""
+        for m_name in MODELS:
+            try:
+                response = await asyncio.to_thread(
+                    client.models.generate_content,
+                    model=m_name,
+                    contents=prompt
+                )
+                text = response.text.strip()
+                if text: break
+            except Exception as e:
+                print(f"Evaluator Fallback: Model {m_name} failed: {e}")
+                continue
+
+        if not text:
+            raise ValueError("Evaluator Ensemble failed to generate any response from models.")
 
         # Robust JSON extraction
         if "```" in text:
