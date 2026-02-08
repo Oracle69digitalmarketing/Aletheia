@@ -4,7 +4,21 @@ import json
 import asyncio
 from opik import track
 from typing import List, Dict, Tuple
-from core.agent_utils import get_genai_client, MODELS
+from core.agent_utils import get_genai_client
+
+# Model fallbacks for robustness
+MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
+
+def get_client():
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        raise ValueError("CRITICAL: GOOGLE_API_KEY is missing from environment.")
+    client = genai.Client(api_key=api_key)
+    try:
+        return track_genai(client)
+    except Exception as e:
+        print(f"Opik track_genai Warning: {e}. Tracing might be limited for GenAI calls.")
+        return client
 
 @track(name="planner_agent")
 async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
@@ -25,14 +39,6 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
         print(f"Planner Agent Configuration Error: {e}")
         raise e
 
-    if client is None:
-        # Mock Response
-        return [
-            {"title": "Research initial steps", "description": f"Gather information on how to start: {goal}", "duration": "30m"},
-            {"title": "Create a detailed schedule", "description": "Break down the goal into daily milestones.", "duration": "45m"},
-            {"title": "Execute first milestone", "description": "Complete the first tangible task of your plan.", "duration": "1h"}
-        ], "Planner running in Mock Mode due to missing API keys."
-
     text = ""
     last_error = ""
     for m_name in MODELS:
@@ -50,13 +56,8 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
             continue
 
     if not text:
-        if "429" in last_error or "quota" in last_error.lower():
-             return [
-                {"title": "Research initial steps", "description": f"Gather information on how to start: {goal}", "duration": "30m"},
-                {"title": "Create a detailed schedule", "description": "Break down the goal into daily milestones.", "duration": "45m"},
-                {"title": "Execute first milestone", "description": "Complete the first tangible task of your plan.", "duration": "1h"}
-            ], "Planner fell back to Mock Mode due to API rate limits (429)."
-        raise ValueError(f"Planner Agent Error: All models failed. Last error: {last_error}")
+        print("Planner Agent Error: All models failed to generate tasks.")
+        return []
 
     try:
         # Simple JSON extraction logic if model ignores instruction
@@ -71,7 +72,7 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
     except Exception as e:
         print(f"Planner Agent JSON Error: {e}")
         print(f"Raw response text: {text}")
-        raise e
+        return []
 
 @track(name="friction_agent")
 async def detect_friction(goal: str, tasks: List[Dict]) -> Tuple[str, str]:
@@ -91,11 +92,7 @@ async def detect_friction(goal: str, tasks: List[Dict]) -> Tuple[str, str]:
         print(f"Monitor Agent Configuration Error: {e}")
         return "I'll be monitoring your progress closely.", "Default monitoring active."
 
-    if client is None:
-        return "Discipline is the bridge between goals and accomplishment.", "Monitor running in Mock Mode."
-
     text = ""
-    last_error = ""
     for m_name in MODELS:
         try:
             response = await asyncio.to_thread(
@@ -111,8 +108,6 @@ async def detect_friction(goal: str, tasks: List[Dict]) -> Tuple[str, str]:
             continue
 
     if not text:
-        if "429" in last_error or "quota" in last_error.lower():
-            return "Keep going, even when it gets tough. Rate limits are just another friction point.", "Monitor fell back to Mock Mode due to API rate limits (429)."
         return "I'll be monitoring your progress closely to ensure you stay on track.", "Standard fallback intervention used."
 
     try:
@@ -123,5 +118,5 @@ async def detect_friction(goal: str, tasks: List[Dict]) -> Tuple[str, str]:
             text = text.split("```")[0].strip()
         data = json.loads(text)
         return data.get("intervention", ""), data.get("reasoning", "Friction detection complete.")
-    except:
+    except Exception as e:
         return text, "Friction detection complete."
