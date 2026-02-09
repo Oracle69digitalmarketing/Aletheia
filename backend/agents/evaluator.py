@@ -4,7 +4,20 @@ import json
 import asyncio
 from opik import track
 from typing import Dict
-from core.agent_utils import get_genai_client, MODELS
+from core.agent_utils import get_genai_client
+
+MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
+
+def get_client():
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        raise ValueError("CRITICAL: GOOGLE_API_KEY is missing from environment.")
+    client = genai.Client(api_key=api_key)
+    try:
+        return track_genai(client)
+    except Exception as e:
+        print(f"Opik track_genai Warning: {e}. Tracing might be limited for GenAI calls.")
+        return client
 
 @track(name="evaluator_ensemble")
 async def evaluate_plan(goal: str, tasks: list) -> Dict:
@@ -27,13 +40,9 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict:
             client = get_genai_client()
         except ValueError as e:
             print(f"Evaluator Agent Configuration Error: {e}")
-            return {"actionability": 4.5, "relevance": 4.8, "helpfulness": 4.7, "reasoning": "Standard evaluation applied due to config error."}
-
-        if client is None:
-            return {"actionability": 4.5, "relevance": 4.8, "helpfulness": 4.7, "reasoning": "Evaluator running in Mock Mode."}
+            return {"actionability": 4.5, "relevance": 4.8, "helpfulness": 4.7, "reasoning": "Standard evaluation applied due to configuration error."}
 
         text = ""
-        last_error = ""
         for m_name in MODELS:
             try:
                 response = await asyncio.to_thread(
@@ -44,13 +53,11 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict:
                 text = response.text.strip()
                 if text: break
             except Exception as e:
-                last_error = str(e)
                 print(f"Evaluator Fallback: Model {m_name} failed: {e}")
                 continue
 
         if not text:
-            # Fallback for ANY error
-            return {"actionability": 4.5, "relevance": 4.8, "helpfulness": 4.7, "reasoning": f"Evaluator fell back to Mock Mode. Last error: {last_error[:100]}"}
+            raise ValueError("Evaluator Ensemble failed to generate any response from models.")
 
         # Robust JSON extraction
         if "```" in text:
