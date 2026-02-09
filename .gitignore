@@ -30,3 +30,4 @@ venv/
 verification/
 *.png
 *.html
+*.db
