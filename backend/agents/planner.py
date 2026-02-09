@@ -43,13 +43,7 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
     last_error = ""
     for m_name in MODELS:
         try:
-            response = await asyncio.to_thread(
-                client.models.generate_content,
-                model=m_name,
-                contents=prompt
-            )
-            text = response.text.strip()
-            if text: break
+            client = get_genai_client()
         except Exception as e:
             last_error = str(e)
             print(f"Planner Fallback: Model {m_name} failed: {e}")
