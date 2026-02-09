@@ -15,7 +15,8 @@ MODELS = [
 
 def get_genai_client():
     """
-    Retrieves the Google GenAI client, checking for both GOOGLE_API_KEY and GEMINI_API_KEY.
+    Retrieves the Google GenAI client.
+    Supports both GOOGLE_API_KEY and GEMINI_API_KEY (from Google AI Studio / Gemini Studio).
     """
     api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
 
