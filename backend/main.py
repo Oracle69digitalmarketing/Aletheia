@@ -20,9 +20,10 @@ from fastapi import Depends
 
 load_dotenv()
 
+# Configure Opik explicitly from environment variables with fallbacks
 def configure_opik():
-    api_key = os.getenv("OPIK_API_KEY") or os.getenv("COMET_API_KEY")
-    workspace = os.getenv("OPIK_WORKSPACE") or os.getenv("COMET_WORKSPACE")
+    api_key = os.getenv("OPIK_API_KEY")
+    workspace = os.getenv("OPIK_WORKSPACE")
 
     # Ignore placeholder keys
     if api_key and ("your_" in api_key or "api_key" in api_key.lower()):
@@ -45,18 +46,18 @@ app = FastAPI(title="Aletheia Backend")
 
 allowed_origins = [
     "http://localhost:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3001",
     "http://localhost:5173",
     "https://aletheia-ruddy.vercel.app",
-    "https://aletheia-ruddy.vercel.app/",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_origin_regex=r"https://aletheia-.*\.vercel\.app", # Support all Vercel previews
+    allow_origins=[
+        "https://aletheia-ruddy.vercel.app",
+        "https://aletheia-ruddy-vercel-app.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:3000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -76,8 +77,8 @@ async def root():
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
-    google_api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
-    opik_api_key = os.getenv("OPIK_API_KEY") or os.getenv("COMET_API_KEY")
+    google_api_key = os.getenv("GOOGLE_API_KEY")
+    opik_api_key = os.getenv("OPIK_API_KEY")
 
     return {
         "status": "healthy",
@@ -85,29 +86,22 @@ async def health():
         "diagnostics": {
             "google_api_key_set": bool(google_api_key and "your_" not in google_api_key.lower()),
             "opik_api_key_set": bool(opik_api_key and "your_" not in opik_api_key.lower()),
-            "google_api_key_env_name": "GOOGLE_API_KEY" if os.getenv("GOOGLE_API_KEY") else ("GEMINI_API_KEY" if os.getenv("GEMINI_API_KEY") else "None"),
-            "opik_workspace": os.getenv("OPIK_WORKSPACE") or os.getenv("COMET_WORKSPACE"),
-            "opik_project": os.getenv("OPIK_PROJECT_NAME") or os.getenv("OPIK_PROJECT") or os.getenv("COMET_PROJECT")
+            "opik_workspace": os.getenv("OPIK_WORKSPACE")
         }
     }
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    origin = request.headers.get("origin")
-    headers = {
-        "Access-Control-Allow-Methods": "*",
-        "Access-Control-Allow-Headers": "*",
-        "Access-Control-Allow-Credentials": "true",
-    }
-    if origin in allowed_origins:
-        headers["Access-Control-Allow-Origin"] = origin
-    elif len(allowed_origins) > 0:
-        headers["Access-Control-Allow-Origin"] = allowed_origins[-1] # Fallback to production
-
+    origin = request.headers.get("Origin", "*")
     return JSONResponse(
         status_code=500,
         content={"detail": str(exc), "type": type(exc).__name__},
-        headers=headers
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Credentials": "true",
+        }
     )
     
 class GoalRequest(BaseModel):
@@ -159,7 +153,7 @@ async def get_history(user_email: str, db: Session = Depends(get_db)):
 @app.post("/api/plan", response_model=PlanResponse)
 @track(name="generate_plan_workflow")
 async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
-    start_time = time.monotonic()
+    start_time = time.time()
 
     # 1. Planner Agent
     try:
@@ -196,7 +190,6 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     latency = int((time.time() - start_time) * 1000)
 
     # Retrieve the ACTUAL Opik Trace ID for this request
-    # This ensures the 'View in Comet' link actually works.
     from opik import opik_context
     trace_data = opik_context.get_current_trace_data()
     trace_id = trace_data.id if trace_data else str(uuid.uuid4())
