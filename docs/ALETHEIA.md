@@ -31,9 +31,9 @@ Aletheia uses Comet Opik for agent observability. To configure your own workspac
 
 1. **Environment Variables**:
    Set the following in your backend `.env` file or deployment environment (e.g., Render settings):
-   - `OPIK_API_KEY`: Your Comet API Key (found in Comet Account Settings).
-   - `COMET_WORKSPACE`: Your workspace name.
-   - `COMET_PROJECT`: The project name (defaults to `aletheia-hackathon`).
+   - `OPIK_API_KEY`: Your Comet/Opik API key.
+   - `OPIK_WORKSPACE`: Your workspace name.
+   - `OPIK_PROJECT`: The project name (defaults to `aletheia-hackathon`).
 
 2. **Automatic Tracing**:
    All agent interactions are automatically tracked using the `@track` decorator. Traces are pushed asynchronously to the Comet dashboard.
