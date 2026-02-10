@@ -10,6 +10,7 @@ import asyncio
 from opik.evaluation import evaluate
 from opik.evaluation.metrics import AnswerRelevance, Hallucination
 from agents.planner import decompose_goal
+from core.opik_setup import get_project
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -63,7 +64,8 @@ def main():
         dataset=dataset,
         task=evaluation_task,
         metrics=[relevance_metric, Hallucination(), actionability_metric],
-        experiment_name="Aletheia Planning Experiment v1"
+        experiment_name="Aletheia Planning Experiment v1",
+        project_name=get_project()
     )
 
     print("Evaluation Complete!")
