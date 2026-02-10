@@ -9,17 +9,6 @@ from core.agent_utils import get_genai_client
 # Model fallbacks for robustness
 MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
 
-def get_client():
-    api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key:
-        raise ValueError("CRITICAL: GOOGLE_API_KEY is missing from environment.")
-    client = genai.Client(api_key=api_key)
-    try:
-        return track_genai(client)
-    except Exception as e:
-        print(f"Opik track_genai Warning: {e}. Tracing might be limited for GenAI calls.")
-        return client
-
 @track(name="planner_agent")
 async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
     prompt = f"""
@@ -35,15 +24,22 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
     """
     try:
         client = get_genai_client()
-    except ValueError as e:
+    except Exception as e:
         print(f"Planner Agent Configuration Error: {e}")
-        raise e
+        return [], f"Configuration Error: {str(e)}"
 
     text = ""
     last_error = ""
     for m_name in MODELS:
         try:
-            client = get_genai_client()
+            response = await asyncio.to_thread(
+                client.models.generate_content,
+                model=m_name,
+                contents=prompt
+            )
+            text = response.text.strip()
+            if text:
+                break
         except Exception as e:
             last_error = str(e)
             print(f"Planner Fallback: Model {m_name} failed: {e}")
@@ -51,22 +47,32 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
 
     if not text:
         print("Planner Agent Error: All models failed to generate tasks.")
-        return []
+        return [], f"Model Error: All models failed. Last error: {last_error}"
 
     try:
         # Simple JSON extraction logic if model ignores instruction
-        if "```" in text:
-            text = text.split("```")[1]
-            if text.startswith("json"):
-                text = text[4:]
-            text = text.split("```")[0].strip()
+        cleaned_text = text
+        if "```" in cleaned_text:
+            cleaned_text = cleaned_text.split("```")[1]
+            if cleaned_text.startswith("json"):
+                cleaned_text = cleaned_text[4:]
+            cleaned_text = cleaned_text.split("```")[0].strip()
+
+        # Further robustness: find the first { and last }
+        if not (cleaned_text.startswith("{") or cleaned_text.startswith("[")):
+            start = cleaned_text.find("{")
+            end = cleaned_text.rfind("}") + 1
+            if start != -1 and end > start:
+                cleaned_text = cleaned_text[start:end]
             
-        data = json.loads(text)
-        return data.get("tasks", []), data.get("reasoning", "Goal decomposed into actionable steps.")
+        data = json.loads(cleaned_text)
+        tasks = data.get("tasks", [])
+        reasoning = data.get("reasoning", "Goal decomposed into actionable steps.")
+        return tasks, reasoning
     except Exception as e:
         print(f"Planner Agent JSON Error: {e}")
         print(f"Raw response text: {text}")
-        return []
+        return [], f"Parsing Error: Could not decode model response. {str(e)}"
 
 @track(name="friction_agent")
 async def detect_friction(goal: str, tasks: List[Dict]) -> Tuple[str, str]:
@@ -82,11 +88,12 @@ async def detect_friction(goal: str, tasks: List[Dict]) -> Tuple[str, str]:
     """
     try:
         client = get_genai_client()
-    except ValueError as e:
+    except Exception as e:
         print(f"Monitor Agent Configuration Error: {e}")
-        return "I'll be monitoring your progress closely.", "Default monitoring active."
+        return "I'll be monitoring your progress closely.", "Default monitoring active due to configuration error."
 
     text = ""
+    last_error = ""
     for m_name in MODELS:
         try:
             response = await asyncio.to_thread(
@@ -105,12 +112,21 @@ async def detect_friction(goal: str, tasks: List[Dict]) -> Tuple[str, str]:
         return "I'll be monitoring your progress closely to ensure you stay on track.", "Standard fallback intervention used."
 
     try:
-        if "```" in text:
-            text = text.split("```")[1]
-            if text.startswith("json"):
-                text = text[4:]
-            text = text.split("```")[0].strip()
-        data = json.loads(text)
-        return data.get("intervention", ""), data.get("reasoning", "Friction detection complete.")
+        cleaned_text = text
+        if "```" in cleaned_text:
+            cleaned_text = cleaned_text.split("```")[1]
+            if cleaned_text.startswith("json"):
+                cleaned_text = cleaned_text[4:]
+            cleaned_text = cleaned_text.split("```")[0].strip()
+
+        if not (cleaned_text.startswith("{") or cleaned_text.startswith("[")):
+            start = cleaned_text.find("{")
+            end = cleaned_text.rfind("}") + 1
+            if start != -1 and end > start:
+                cleaned_text = cleaned_text[start:end]
+
+        data = json.loads(cleaned_text)
+        return data.get("intervention", "I'll be monitoring your progress closely."), data.get("reasoning", "Friction detection complete.")
     except Exception as e:
-        return text, "Friction detection complete."
+        # Fallback if JSON parsing fails
+        return text[:200], "Friction detection complete (parsing failed)."
