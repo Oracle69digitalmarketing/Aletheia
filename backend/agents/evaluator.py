@@ -8,16 +8,13 @@ from core.agent_utils import get_genai_client
 
 MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
 
-def get_client():
-    api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key:
-        raise ValueError("CRITICAL: GOOGLE_API_KEY is missing from environment.")
-    client = genai.Client(api_key=api_key)
-    try:
-        return track_genai(client)
-    except Exception as e:
-        print(f"Opik track_genai Warning: {e}. Tracing might be limited for GenAI calls.")
-        return client
+def _get_mock_scores(reasoning: str) -> Dict:
+    return {
+        "actionability": 4.5,
+        "relevance": 4.8,
+        "helpfulness": 4.7,
+        "reasoning": reasoning
+    }
 
 @track(name="evaluator_ensemble")
 async def evaluate_plan(goal: str, tasks: list) -> Dict:
@@ -41,9 +38,10 @@ ip1p    Return a JSON object with keys: "actionability", "relevance", "helpfulne
             client = get_genai_client()
         except ValueError as e:
             print(f"Evaluator Agent Configuration Error: {e}")
-            return {"actionability": 4.5, "relevance": 4.8, "helpfulness": 4.7, "reasoning": "Standard evaluation applied due to configuration error."}
+            return _get_mock_scores("Standard evaluation applied due to configuration error.")
 
         text = ""
+        last_error = "Unknown error"
         for m_name in MODELS:
             try:
                 response = await asyncio.to_thread(
@@ -54,6 +52,7 @@ ip1p    Return a JSON object with keys: "actionability", "relevance", "helpfulne
                 text = response.text.strip()
                 if text: break
             except Exception as e:
+                last_error = str(e)
                 print(f"Evaluator Fallback: Model {m_name} failed: {e}")
                 continue
 
@@ -93,20 +92,8 @@ ip1p    Return a JSON object with keys: "actionability", "relevance", "helpfulne
             }
         except Exception as e:
             print(f"Evaluator JSON Error: {e} | Raw: {text[:100]}")
-            return _get_mock_scores("Parsing error in evaluation.")
+            return _get_mock_scores(f"Parsing error in evaluation: {str(e)[:30]}")
 
-        scores = json.loads(text)
-        return {
-            "actionability": float(scores.get("actionability", 4.5)),
-            "relevance": float(scores.get("relevance", 4.8)),
-            "helpfulness": float(scores.get("helpfulness", 4.7)),
-            "reasoning": scores.get("reasoning", "Plan verified for actionability and relevance.")
-        }
     except Exception as e:
         print(f"Evaluator Error: {e}")
-        return {
-            "actionability": 4.5,
-            "relevance": 4.8,
-            "helpfulness": 4.7,
-            "reasoning": "Standard evaluation applied."
-        }
+        return _get_mock_scores("Standard evaluation applied due to unexpected error.")
