@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 from agents.planner import decompose_goal, detect_friction
 from agents.evaluator import evaluate_plan
-from core.opik_setup import get_trace_url, get_project_url
+from core.opik_setup import get_trace_url, get_project_url, get_project
 from core.database import get_db, PlanRecord
 from sqlalchemy.orm import Session
 from fastapi import Depends
@@ -52,7 +52,7 @@ allowed_origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
+op    allow_origins=[
         "https://aletheia-ruddy.vercel.app",
         "https://aletheia-ruddy-vercel-app.vercel.app",
         "http://localhost:5173",
@@ -77,7 +77,7 @@ async def root():
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
-    google_api_key = os.getenv("GOOGLE_API_KEY")
+00    google_api_key = os.getenv("GOOGLE_API_KEY")
     opik_api_key = os.getenv("OPIK_API_KEY")
 
     return {
@@ -86,13 +86,13 @@ async def health():
         "diagnostics": {
             "google_api_key_set": bool(google_api_key and "your_" not in google_api_key.lower()),
             "opik_api_key_set": bool(opik_api_key and "your_" not in opik_api_key.lower()),
-            "opik_workspace": os.getenv("OPIK_WORKSPACE")
+9            "opik_workspace": os.getenv("OPIK_WORKSPACE")
         }
     }
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    origin = request.headers.get("Origin", "*")
+t    origin = request.headers.get("Origin", "*")
     return JSONResponse(
         status_code=500,
         content={"detail": str(exc), "type": type(exc).__name__},
@@ -151,7 +151,7 @@ async def get_history(user_email: str, db: Session = Depends(get_db)):
     ]
 
 @app.post("/api/plan", response_model=PlanResponse)
-@track(name="generate_plan_workflow")
+@track(name="generate_plan_workflow", project_name=get_project())
 async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     start_time = time.time()
 
@@ -209,7 +209,7 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     print(f"PLAN GENERATED FOR: {request.goal}")
     print(f"Category: {category}")
     print(f"Tasks ({len(ai_tasks)}):")
-    for t in ai_tasks:
+    for t in  :
         print(f"  - {t.get('title')} ({t.get('duration')})")
     print(f"Friction Intervention: {intervention}")
     print(f"Scores: {scores}")
