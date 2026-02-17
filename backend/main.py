@@ -150,7 +150,16 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     intervention, monitor_thought = await detect_friction(request.goal, ai_tasks)
     
     # 3. Evaluation Agent (Real scoring)
-    scores = await evaluate_plan(request.goal, ai_tasks)
+    try:
+        scores = await evaluate_plan(request.goal, ai_tasks)
+    except Exception as e:
+        print(f"Evaluator Agent Error (caught in main.py): {e}")
+        scores = {
+            "actionability": 0.0,
+            "relevance": 0.0,
+            "helpfulness": 0.0,
+            "reasoning": f"Evaluation failed due to: {str(e)[:50]}..."
+        }
     
     # 4. Categorization logic
     goal_lower = request.goal.lower()
