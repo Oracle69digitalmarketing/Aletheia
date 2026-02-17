@@ -33,12 +33,10 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict:
 
     Return a JSON object with keys: "actionability", "relevance", "helpfulness" and a "reasoning" key (one sentence).
     """
-    try:
-        try:
-            client = get_genai_client()
-        except ValueError as e:
-            print(f"Evaluator Agent Configuration Error: {e}")
-            return _get_mock_scores("Standard evaluation applied due to configuration error.")
+        client = get_genai_client()
+    except ValueError as e:
+        print(f"Evaluator Agent Configuration Error: {e}")
+        return _get_mock_scores("Standard evaluation applied due to configuration error.")
 
         text = ""
         last_error = "Unknown error"
