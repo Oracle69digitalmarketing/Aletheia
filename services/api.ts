@@ -41,7 +41,7 @@ export const generateAgenticPlan = async (goal: string): Promise<Plan> => {
 
     const logs: LogEntry[] = [
       { id: '1', timestamp: new Date().toLocaleTimeString(), level: 'INFO', source: 'SYSTEM', message: `POST /api/plan 200 OK` },
-      { id: '2', timestamp: new Date().toLocaleTimeString(), level: 'TRACE', source: 'OPIK', message: `Trace ID [${data.trace_id || 'N/A'}] synchronized.` },
+      { id: '2', timestamp: new Date().toLocaleTimeString(), level: 'TRACE', source: 'OPIK', message: `Trace ID [${data.traceId || 'N/A'}] synchronized.` },
       { id: '3', timestamp: new Date().toLocaleTimeString(), level: 'DEBUG', source: 'EVALUATOR', message: `Scoring complete: Rel ${data.metrics?.relevance || 'N/A'}` },
     ];
 
@@ -55,20 +55,20 @@ export const generateAgenticPlan = async (goal: string): Promise<Plan> => {
         status: TaskStatus.TODO,
         category: data.category || "General"
       })),
-      agentReasoning: (data.reasoning || []).map((r: any) => ({
+      agentReasoning: (data.agentReasoning || []).map((r: any) => ({
         ...r,
         timestamp: new Date().toLocaleTimeString()
       })),
-      traceId: data.trace_id || "",
-      traceUrl: data.trace_url || "",
+      traceId: data.traceId || "",
+      traceUrl: data.traceUrl || "",
       logs: logs,
-      frictionIntervention: data.friction_intervention || "No friction detected.",
+      frictionIntervention: data.frictionIntervention || "No friction detected.",
       metrics: {
         actionability: data.metrics?.actionability ?? 0,
         relevance: data.metrics?.relevance ?? 0,
         helpfulness: data.metrics?.helpfulness ?? 0,
         latency: data.metrics?.latency ?? 0,
-        projectUrl: data.metrics?.project_url ?? ""
+        projectUrl: data.metrics?.projectUrl ?? ""
       }
     };
   } catch (err: any) {
