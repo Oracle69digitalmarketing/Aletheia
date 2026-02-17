@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from opik import track
 from dotenv import load_dotenv
+from datetime import datetime # Added datetime import
 
 from agents.planner import decompose_goal, detect_friction
 from agents.evaluator import evaluate_plan
@@ -52,7 +53,7 @@ allowed_origins = [
 
 app.add_middleware(
     CORSMiddleware,
-op    allow_origins=[
+    allow_origins=[
         "https://aletheia-ruddy.vercel.app",
         "https://aletheia-ruddy-vercel-app.vercel.app",
         "http://localhost:5173",
@@ -108,30 +109,43 @@ class GoalRequest(BaseModel):
     goal: str
     user_email: Optional[str] = "anonymous"
 
+class LogEntry(BaseModel):
+    id: str
+    timestamp: str
+    level: str # 'INFO' | 'TRACE' | 'DEBUG' | 'WARN'
+    source: str
+    message: str
+
 class AgentThought(BaseModel):
     agent: str
     thought: str
+    timestamp: str = "" # Added timestamp
 
 class Task(BaseModel):
+    id: str = "" # Added id
     title: str
     description: str
     duration: str
+    status: str = "todo" # Added status
+    category: str = "Uncategorized" # Added category
 
 class PlanMetrics(BaseModel):
     actionability: float
     relevance: float
     helpfulness: float
     latency: int
-    project_url: str
+    projectUrl: str # Renamed to projectUrl
 
 class PlanResponse(BaseModel):
     id: str
-    trace_id: str
-    trace_url: str
+    originalGoal: str # Added originalGoal
     category: str
     tasks: List[Task]
-    reasoning: List[AgentThought]
-    friction_intervention: str
+    agentReasoning: List[AgentThought] # Renamed to agentReasoning
+    traceId: str # Renamed to traceId
+    traceUrl: str # Renamed to traceUrl
+    logs: List[LogEntry] # Added logs
+    frictionIntervention: str
     metrics: PlanMetrics
 
 @app.get("/api/history", response_model=List[PlanResponse])
@@ -182,9 +196,9 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     elif any(w in goal_lower for w in ["job", "work", "career", "business", "money"]): category = "Professional"
 
     reasoning = [
-        AgentThought(agent="Planner", thought=planner_thought),
-        AgentThought(agent="Evaluator", thought=scores.get("reasoning", "Plan verified for actionability and relevance.")),
-        AgentThought(agent="Monitor", thought=monitor_thought)
+        AgentThought(agent="Planner", thought=planner_thought, timestamp=datetime.now().isoformat()),
+        AgentThought(agent="Evaluator", thought=scores.get("reasoning", "Plan verified for actionability and relevance."), timestamp=datetime.now().isoformat()),
+        AgentThought(agent="Monitor", thought=monitor_thought, timestamp=datetime.now().isoformat())
     ]
 
     latency = int((time.time() - start_time) * 1000)
@@ -209,7 +223,7 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     print(f"PLAN GENERATED FOR: {request.goal}")
     print(f"Category: {category}")
     print(f"Tasks ({len(ai_tasks)}):")
-    for t in  :
+    for t in ai_tasks:
         print(f"  - {t.get('title')} ({t.get('duration')})")
     print(f"Friction Intervention: {intervention}")
     print(f"Scores: {scores}")
@@ -217,20 +231,35 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     print("="*50 + "\n")
 
     plan_id = str(uuid.uuid4())[:8]
+
+    # Prepare tasks with new fields
+    formatted_tasks = []
+    for task_dict in ai_tasks:
+        formatted_tasks.append(Task(
+            id=str(uuid.uuid4()),
+            title=task_dict.get('title', 'Untitled Task'),
+            description=task_dict.get('description', ''),
+            duration=task_dict.get('duration', '0m'),
+            status="todo",
+            category="Uncategorized"
+        ))
+
     response_data = {
         "id": plan_id,
-        "trace_id": trace_id,
-        "trace_url": get_trace_url(trace_id),
+        "originalGoal": request.goal,
         "category": category,
-        "tasks": [Task(**t) for t in ai_tasks],
-        "reasoning": reasoning,
-        "friction_intervention": intervention,
+        "tasks": formatted_tasks,
+        "agentReasoning": reasoning, # Renamed
+        "traceId": trace_id, # Renamed
+        "traceUrl": get_trace_url(trace_id), # Renamed
+        "logs": [], # Added logs
+        "frictionIntervention": intervention,
         "metrics": {
             "actionability": scores.get("actionability", 4.0),
             "relevance": scores.get("relevance", 4.0),
             "helpfulness": scores.get("helpfulness", 4.0),
             "latency": latency,
-            "project_url": get_project_url()
+            "projectUrl": get_project_url() # Renamed
         }
     }
 
@@ -241,8 +270,8 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
             user_email=request.user_email,
             goal=request.goal,
             category=category,
-            tasks=[t for t in ai_tasks],
-            reasoning=[{"agent": r.agent, "thought": r.thought} for r in reasoning],
+            tasks=[t.model_dump() for t in formatted_tasks], # Store as dictionaries
+            reasoning=[r.model_dump() for r in reasoning], # Store as dictionaries
             friction_intervention=intervention,
             metrics=response_data["metrics"],
             trace_id=trace_id

@@ -2,12 +2,23 @@
 import os
 import json
 import asyncio
+import re # Import re for regex
 from opik import track
 from typing import List, Dict, Tuple
 from core.agent_utils import get_genai_client
+from pydantic import BaseModel, Field # Import BaseModel and Field
+from backend.main import Task, AgentThought # Import Task and AgentThought
 
 # Model fallbacks for robustness
 MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
+
+class PlannerResponse(BaseModel):
+    tasks: List[Task] = Field(..., description="A list of 3 objects with keys: 'title', 'description', 'duration'.")
+    reasoning: str = Field(..., description="A one-sentence professional explanation of your planning logic.")
+
+class FrictionResponse(BaseModel):
+    intervention: str = Field(..., description="A one-sentence, encouraging, yet firm intervention quote.")
+    reasoning: str = Field(..., description="A one-sentence explanation of why you chose this intervention.")
 
 @track(name="planner_agent")
 async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
@@ -50,29 +61,24 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
         return [], f"Model Error: All models failed. Last error: {last_error}"
 
     try:
-        # Simple JSON extraction logic if model ignores instruction
-        cleaned_text = text
-        if "```" in cleaned_text:
-            cleaned_text = cleaned_text.split("```")[1]
-            if cleaned_text.startswith("json"):
-                cleaned_text = cleaned_text[4:]
-            cleaned_text = cleaned_text.split("```")[0].strip()
-
-        # Further robustness: find the first { and last }
-        if not (cleaned_text.startswith("{") or cleaned_text.startswith("[")):
-            start = cleaned_text.find("{")
-            end = cleaned_text.rfind("}") + 1
-            if start != -1 and end > start:
-                cleaned_text = cleaned_text[start:end]
+        # Use regex to find the JSON object more robustly
+        # This looks for content between the first { and last }
+        json_match = re.search(r"\{.*\}", text, re.DOTALL)
+        if not json_match:
+            raise ValueError("No JSON object found in model response.")
             
-        data = json.loads(cleaned_text)
-        tasks = data.get("tasks", [])
-        reasoning = data.get("reasoning", "Goal decomposed into actionable steps.")
-        return tasks, reasoning
+        cleaned_json_string = json_match.group(0)
+        
+        # Use Pydantic for parsing and validation
+        planner_response = PlannerResponse.model_validate_json(cleaned_json_string)
+        
+        # The Task model in main.py has default values for id, status, category
+        # If the LLM returns only title, description, duration, Pydantic will fill the rest.
+        return [task.model_dump() for task in planner_response.tasks], planner_response.reasoning
     except Exception as e:
         print(f"Planner Agent JSON Error: {e}")
         print(f"Raw response text: {text}")
-        return [], f"Parsing Error: Could not decode model response. {str(e)}"
+        return [], f"Parsing Error: Could not decode or validate model response. {str(e)}"
 
 @track(name="friction_agent")
 async def detect_friction(goal: str, tasks: List[Dict]) -> Tuple[str, str]:
@@ -112,21 +118,18 @@ async def detect_friction(goal: str, tasks: List[Dict]) -> Tuple[str, str]:
         return "I'll be monitoring your progress closely to ensure you stay on track.", "Standard fallback intervention used."
 
     try:
-        cleaned_text = text
-        if "```" in cleaned_text:
-            cleaned_text = cleaned_text.split("```")[1]
-            if cleaned_text.startswith("json"):
-                cleaned_text = cleaned_text[4:]
-            cleaned_text = cleaned_text.split("```")[0].strip()
-
-        if not (cleaned_text.startswith("{") or cleaned_text.startswith("[")):
-            start = cleaned_text.find("{")
-            end = cleaned_text.rfind("}") + 1
-            if start != -1 and end > start:
-                cleaned_text = cleaned_text[start:end]
-
-        data = json.loads(cleaned_text)
-        return data.get("intervention", "I'll be monitoring your progress closely."), data.get("reasoning", "Friction detection complete.")
+        # Use regex to find the JSON object more robustly
+        json_match = re.search(r"\{.*\}", text, re.DOTALL)
+        if not json_match:
+            raise ValueError("No JSON object found in model response.")
+            
+        cleaned_json_string = json_match.group(0)
+        
+        # Use Pydantic for parsing and validation
+        friction_response = FrictionResponse.model_validate_json(cleaned_json_string)
+        
+        return friction_response.intervention, friction_response.reasoning
     except Exception as e:
-        # Fallback if JSON parsing fails
-        return text[:200], "Friction detection complete (parsing failed)."
+        print(f"Monitor Agent JSON Error: {e}")
+        print(f"Raw response text: {text}")
+        return "I'll be monitoring your progress closely (parsing failed).", f"Parsing Error: Could not decode or validate model response. {str(e)}"
