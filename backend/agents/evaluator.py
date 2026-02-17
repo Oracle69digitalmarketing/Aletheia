@@ -21,7 +21,7 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict:
     """Runs all 3 evaluations in a single LLM call to reduce latency."""
     try:
         tasks_str = json.dumps(tasks)
-        prompt = f"""6
+        prompt = f"""
         You are the Aletheia Evaluator Ensemble.
         Score the following plan for the goal: "{goal}"
         Plan: {tasks_str}
@@ -31,7 +31,7 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict:
         2. relevance (Strategic Judge: does it actually achieve the goal?)
         3. helpfulness (Coaching Judge: is the advice high quality?)
 
-ip1p    Return a JSON object with keys: "actionability", "relevance", "helpfulness" and a "reasoning" key (one sentence).
+    Return a JSON object with keys: "actionability", "relevance", "helpfulness" and a "reasoning" key (one sentence).
     """
     try:
         try:
@@ -57,7 +57,7 @@ ip1p    Return a JSON object with keys: "actionability", "relevance", "helpfulne
                 continue
 
         if not text:
-⁰            raise ValueError("Evaluator Ensemble failed to generate any response from models.")
+            raise ValueError("Evaluator Ensemble failed to generate any response from models.")
 
         if not text:
             error_msg = str(last_error)
