@@ -78,7 +78,7 @@ async def root():
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
-00    google_api_key = os.getenv("GOOGLE_API_KEY")
+    google_api_key = os.getenv("GOOGLE_API_KEY")
     opik_api_key = os.getenv("OPIK_API_KEY")
 
     return {
@@ -87,13 +87,13 @@ async def health():
         "diagnostics": {
             "google_api_key_set": bool(google_api_key and "your_" not in google_api_key.lower()),
             "opik_api_key_set": bool(opik_api_key and "your_" not in opik_api_key.lower()),
-9            "opik_workspace": os.getenv("OPIK_WORKSPACE")
+            "opik_workspace": os.getenv("OPIK_WORKSPACE")
         }
     }
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-t    origin = request.headers.get("Origin", "*")
+    origin = request.headers.get("Origin", "*")
     return JSONResponse(
         status_code=500,
         content={"detail": str(exc), "type": type(exc).__name__},
