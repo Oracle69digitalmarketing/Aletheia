@@ -5,3 +5,4 @@ google-genai>=1.60.0
 opik==1.9.98
 python-dotenv==1.0.0
 sqlalchemy
+openai # Added by Gemini CLI
