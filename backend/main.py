@@ -54,12 +54,14 @@ allowed_origins = [
     "http://localhost:3000",
     "http://localhost:5173",
     "https://aletheia-gfzrzo11w-oracle69.vercel.app",
+    "https://aletheia-ruddy.vercel.app",
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://aletheia-gfzrzo11w-oracle69.vercel.app",
+        "https://aletheia-ruddy.vercel.app",
         "https://aletheia-ruddy-vercel-app.vercel.app",
         "http://localhost:5173",
         "http://localhost:3000"
