@@ -7,7 +7,7 @@ from opik import track
 from typing import List, Dict, Tuple
 from core.agent_utils import get_genai_client
 from pydantic import BaseModel, Field # Import BaseModel and Field
-from ..models import Task, AgentThought # Import Task and AgentThought
+from models import Task, AgentThought # Import Task and AgentThought
 
 # Model fallbacks for robustness
 MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
