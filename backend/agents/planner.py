@@ -5,12 +5,13 @@ import asyncio
 import re # Import re for regex
 from opik import track
 from typing import List, Dict, Tuple
-from core.agent_utils import get_genai_client
+from core.agent_utils import get_llm_client
 from pydantic import BaseModel, Field # Import BaseModel and Field
 from models import Task, AgentThought # Import Task and AgentThought
 
-# Model fallbacks for robustness
-MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
+# Model fallbacks for robustness - will be dynamically chosen
+GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
+OPENAI_MODEL = 'gpt-4o' # Or 'gpt-3.5-turbo' for cheaper/faster
 
 class PlannerResponse(BaseModel):
     tasks: List[Task] = Field(..., description="A list of 3 objects with keys: 'title', 'description', 'duration'.")
@@ -34,28 +35,46 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
     Do not include markdown formatting like ```json.
     """
     try:
-        client = get_genai_client()
+        llm_client_info = get_llm_client() # Changed
+        llm_client_type = llm_client_info["type"]
+        llm_client = llm_client_info["client"]
     except Exception as e:
         print(f"Planner Agent Configuration Error: {e}")
         return [], f"Configuration Error: {str(e)}"
 
     text = ""
     last_error = ""
-    for m_name in MODELS:
+
+    if llm_client_type == "gemini":
+        models_to_try = GEMINI_MODELS
+        for m_name in models_to_try:
+            try:
+                response = await asyncio.to_thread(
+                    llm_client.models.generate_content,
+                    model=m_name,
+                    contents=prompt
+                )
+                text = response.text.strip()
+                if text:
+                    break
+            except Exception as e:
+                last_error = str(e)
+                print(f"Planner Fallback: Gemini Model {m_name} failed: {e}")
+                continue
+    elif llm_client_type == "openai":
         try:
+            messages = [{"role": "user", "content": prompt}]
             response = await asyncio.to_thread(
-                client.models.generate_content,
-                model=m_name,
-                contents=prompt
+                llm_client.chat.completions.create,
+                model=OPENAI_MODEL,
+                messages=messages,
+                response_format={"type": "json_object"} # Specify JSON output
             )
-            text = response.text.strip()
-            if text:
-                break
+            text = response.choices[0].message.content.strip()
         except Exception as e:
             last_error = str(e)
-            print(f"Planner Fallback: Model {m_name} failed: {e}")
-            continue
-
+            print(f"Planner Fallback: OpenAI Model {OPENAI_MODEL} failed: {e}")
+            
     if not text:
         print("Planner Agent Error: All models failed to generate tasks.")
         return [], f"Model Error: All models failed. Last error: {last_error}"
@@ -93,26 +112,44 @@ async def detect_friction(goal: str, tasks: List[Dict]) -> Tuple[str, str]:
     2. "reasoning": A one-sentence explanation of why you chose this intervention.
     """
     try:
-        client = get_genai_client()
+        llm_client_info = get_llm_client() # Changed
+        llm_client_type = llm_client_info["type"]
+        llm_client = llm_client_info["client"]
     except Exception as e:
         print(f"Monitor Agent Configuration Error: {e}")
         return "I'll be monitoring your progress closely.", "Default monitoring active due to configuration error."
 
     text = ""
     last_error = ""
-    for m_name in MODELS:
+
+    if llm_client_type == "gemini":
+        models_to_try = GEMINI_MODELS
+        for m_name in models_to_try:
+            try:
+                response = await asyncio.to_thread(
+                    llm_client.models.generate_content,
+                    model=m_name,
+                    contents=prompt
+                )
+                text = response.text.strip()
+                if text: break
+            except Exception as e:
+                last_error = str(e)
+                print(f"Monitor Fallback: Gemini Model {m_name} failed: {e}")
+                continue
+    elif llm_client_type == "openai":
         try:
+            messages = [{"role": "user", "content": prompt}]
             response = await asyncio.to_thread(
-                client.models.generate_content,
-                model=m_name,
-                contents=prompt
+                llm_client.chat.completions.create,
+                model=OPENAI_MODEL,
+                messages=messages,
+                response_format={"type": "json_object"}
             )
-            text = response.text.strip()
-            if text: break
+            text = response.choices[0].message.content.strip()
         except Exception as e:
             last_error = str(e)
-            print(f"Monitor Fallback: Model {m_name} failed: {e}")
-            continue
+            print(f"Monitor Fallback: OpenAI Model {OPENAI_MODEL} failed: {e}")
 
     if not text:
         return "I'll be monitoring your progress closely to ensure you stay on track.", "Standard fallback intervention used."
