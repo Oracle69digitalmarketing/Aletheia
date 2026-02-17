@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from opik import track
 from dotenv import load_dotenv
 from datetime import datetime # Added datetime import
+from typing import List
 
 from agents.planner import decompose_goal, detect_friction
 from agents.evaluator import evaluate_plan
