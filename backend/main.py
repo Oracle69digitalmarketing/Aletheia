@@ -53,13 +53,13 @@ app = FastAPI(title="Aletheia Backend")
 allowed_origins = [
     "http://localhost:3000",
     "http://localhost:5173",
-    "https://aletheia-ruddy.vercel.app",
+    "https://aletheia-gfzrzo11w-oracle69.vercel.app",
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://aletheia-ruddy.vercel.app",
+        "https://aletheia-gfzrzo11w-oracle69.vercel.app",
         "https://aletheia-ruddy-vercel-app.vercel.app",
         "http://localhost:5173",
         "http://localhost:3000"
@@ -151,12 +151,6 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     
     # 3. Evaluation Agent (Real scoring)
     scores = await evaluate_plan(request.goal, ai_tasks)
-    print(f"DEBUG: scores after evaluate_plan: {scores}") # Added debug print
-
-    if scores is None: # Added explicit check
-        print("ERROR: scores is None after evaluate_plan")
-        from fastapi import HTTPException
-        raise HTTPException(status_code=500, detail="Evaluator agent returned None scores.")
     
     # 4. Categorization logic
     goal_lower = request.goal.lower()
