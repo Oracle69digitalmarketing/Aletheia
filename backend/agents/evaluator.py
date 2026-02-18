@@ -73,13 +73,12 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict:
             last_error = str(e)
             print(f"Evaluator Fallback: OpenAI Model {OPENAI_MODEL} failed: {e}")
 
-    if not text:
-        raise ValueError("Evaluator Ensemble failed to generate any response from models.")
-
-    if not text:
-        error_msg = str(last_error)
-        return _get_mock_scores(f"Evaluator Agent: Model unavailable ({error_msg[:30]}).")
-
+        if not text:
+            # Fallback if no text is generated from any model
+            error_msg = str(last_error)
+            print(f"Evaluator Ensemble failed to generate any response from models. Last error: {error_msg}")
+            return _get_mock_scores(f"Model response error: {error_msg[:30]}")
+    
         try:
             cleaned_text = text
             if "```" in cleaned_text:
@@ -108,9 +107,5 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict:
                 "reasoning": scores.get("reasoning", "Plan verified for actionability and relevance.")
             }
         except Exception as e:
-            print(f"Evaluator JSON Error: {e} | Raw: {text[:100]}")
-            return _get_mock_scores(f"Parsing error in evaluation: {str(e)[:30]}")
-
-    except Exception as e:
-        print(f"Evaluator Error: {e}")
-        return _get_mock_scores("Standard evaluation applied due to unexpected error.")
+            print(f"Evaluator JSON Parsing Error: {e} | Raw: {text[:200]}") # Increased raw text length for debug
+            return _get_mock_scores(f"Parsing error in evaluation: {str(e)[:50]}")
