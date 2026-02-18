@@ -172,6 +172,14 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
                 "helpfulness": 0.0,
                 "reasoning": f"Evaluation failed due to: {str(e)[:50]}..."
             }
+    if scores is None:
+        print("WARNING: evaluate_plan returned None. Assigning fallback scores.")
+        scores = {
+            "actionability": 0.0,
+            "relevance": 0.0,
+            "helpfulness": 0.0,
+            "reasoning": "Evaluation failed: unexpected None from evaluate_plan."
+        }
     
     # 4. Categorization logic
     goal_lower = request.goal.lower()
