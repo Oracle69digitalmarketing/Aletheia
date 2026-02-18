@@ -1,4 +1,3 @@
-
 import os
 import json
 import asyncio
@@ -6,7 +5,6 @@ from opik import track
 from typing import Dict
 from core.agent_utils import get_llm_client
 
-GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
 OPENAI_MODEL = 'gpt-4o' # Or 'gpt-3.5-turbo' for cheaper/faster
 
 def _get_mock_scores(reasoning: str) -> Dict:
@@ -42,24 +40,9 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict:
         return _get_mock_scores("Standard evaluation applied due to configuration error.")
 
     text = ""
-    last_error = "Unknown error"
+    last_error = "" # Initialize last_error here
 
-    if llm_client_type == "gemini":
-        models_to_try = GEMINI_MODELS
-        for m_name in models_to_try:
-            try:
-                response = await asyncio.to_thread(
-                    llm_client.models.generate_content,
-                    model=m_name,
-                    contents=prompt
-                )
-                text = response.text.strip()
-                if text: break
-            except Exception as e:
-                last_error = str(e)
-                print(f"Evaluator Fallback: Gemini Model {m_name} failed: {e}")
-                continue
-    elif llm_client_type == "openai":
+    if llm_client_type == "openai":
         try:
             messages = [{"role": "user", "content": prompt}]
             response = await asyncio.to_thread(
@@ -78,34 +61,38 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict:
             error_msg = str(last_error)
             print(f"Evaluator Ensemble failed to generate any response from models. Last error: {error_msg}")
             return _get_mock_scores(f"Model response error: {error_msg[:30]}")
+    else: # If client type is not openai, it implies an error in get_llm_client
+        error_msg = "LLM client not configured correctly (not OpenAI)."
+        print(f"Evaluator Agent Error: {error_msg}")
+        return _get_mock_scores(f"Model response error: {error_msg[:30]}")
     
-        try:
-            cleaned_text = text
-            if "```" in cleaned_text:
-                parts = cleaned_text.split("```")
-                for part in parts:
-                    part = part.strip()
-                    if part.startswith("json"): part = part[4:].strip()
-                    if part.startswith("{") and "actionability" in part:
-                        cleaned_text = part
-                        break
+    try:
+        cleaned_text = text
+        if "```" in cleaned_text:
+            parts = cleaned_text.split("```")
+            for part in parts:
+                part = part.strip()
+                if part.startswith("json"): part = part[4:].strip()
+                if part.startswith("{") and "actionability" in part:
+                    cleaned_text = part
+                    break
 
-            if not (cleaned_text.startswith("{") or cleaned_text.startswith("[")):
-                start = cleaned_text.find("{")
-                end = cleaned_text.rfind("}") + 1
-                if start != -1 and end > start:
-                    cleaned_text = cleaned_text[start:end]
+        if not (cleaned_text.startswith("{") or cleaned_text.startswith("[")):
+            start = cleaned_text.find("{")
+            end = cleaned_text.rfind("}") + 1
+            if start != -1 and end > start:
+                cleaned_text = cleaned_text[start:end]
 
-            scores = json.loads(cleaned_text)
-            if not isinstance(scores, dict):
-                return _get_mock_scores("Malformed evaluator response.")
+        scores = json.loads(cleaned_text)
+        if not isinstance(scores, dict):
+            return _get_mock_scores("Malformed evaluator response.")
 
-            return {
-                "actionability": float(scores.get("actionability", 4.5)),
-                "relevance": float(scores.get("relevance", 4.8)),
-                "helpfulness": float(scores.get("helpfulness", 4.7)),
-                "reasoning": scores.get("reasoning", "Plan verified for actionability and relevance.")
-            }
-        except Exception as e:
-            print(f"Evaluator JSON Parsing Error: {e} | Raw: {text[:200]}") # Increased raw text length for debug
-            return _get_mock_scores(f"Parsing error in evaluation: {str(e)[:50]}")
+        return {
+            "actionability": float(scores.get("actionability", 4.5)),
+            "relevance": float(scores.get("relevance", 4.8)),
+            "helpfulness": float(scores.get("helpfulness", 4.7)),
+            "reasoning": scores.get("reasoning", "Plan verified for actionability and relevance.")
+        }
+    except Exception as e:
+        print(f"Evaluator JSON Parsing Error: {e} | Raw: {text[:200]}") # Increased raw text length for debug
+        return _get_mock_scores(f"Parsing error in evaluation: {str(e)[:50]}")

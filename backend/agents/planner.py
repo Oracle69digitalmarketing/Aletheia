@@ -9,8 +9,6 @@ from core.agent_utils import get_llm_client
 from pydantic import BaseModel, Field # Import BaseModel and Field
 from models import Task, AgentThought # Import Task and AgentThought
 
-# Model fallbacks for robustness - will be dynamically chosen
-GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
 OPENAI_MODEL = 'gpt-4o' # Or 'gpt-3.5-turbo' for cheaper/faster
 
 class PlannerResponse(BaseModel):
@@ -24,10 +22,10 @@ class FrictionResponse(BaseModel):
 @track(name="planner_agent")
 async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
     prompt = f"""
-    You are the Aletheia Planner Agent. 
+    You are the Aletheia Planner Agent.
     Decompose the following resolution into exactly 3 highly actionable, SMART tasks.
     Resolution: "{goal}"
-    
+
     Return a JSON object with two keys:
     1. "tasks": A list of 3 objects with keys: "title", "description", "duration".
     2. "reasoning": A one-sentence professional explanation of your planning logic.
@@ -45,23 +43,7 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
     text = ""
     last_error = ""
 
-    if llm_client_type == "gemini":
-        models_to_try = GEMINI_MODELS
-        for m_name in models_to_try:
-            try:
-                response = await asyncio.to_thread(
-                    llm_client.models.generate_content,
-                    model=m_name,
-                    contents=prompt
-                )
-                text = response.text.strip()
-                if text:
-                    break
-            except Exception as e:
-                last_error = str(e)
-                print(f"Planner Fallback: Gemini Model {m_name} failed: {e}")
-                continue
-    elif llm_client_type == "openai":
+    if llm_client_type == "openai":
         try:
             messages = [{"role": "user", "content": prompt}]
             response = await asyncio.to_thread(
@@ -74,11 +56,10 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
         except Exception as e:
             last_error = str(e)
             print(f"Planner Fallback: OpenAI Model {OPENAI_MODEL} failed: {e}")
-            
+
     if not text:
         print("Planner Agent Error: All models failed to generate tasks.")
         return [], f"Model Error: All models failed. Last error: {last_error}"
-
     try:
         # Use regex to find the JSON object more robustly
         # This looks for content between the first { and last }
@@ -122,22 +103,7 @@ async def detect_friction(goal: str, tasks: List[Dict]) -> Tuple[str, str]:
     text = ""
     last_error = ""
 
-    if llm_client_type == "gemini":
-        models_to_try = GEMINI_MODELS
-        for m_name in models_to_try:
-            try:
-                response = await asyncio.to_thread(
-                    llm_client.models.generate_content,
-                    model=m_name,
-                    contents=prompt
-                )
-                text = response.text.strip()
-                if text: break
-            except Exception as e:
-                last_error = str(e)
-                print(f"Monitor Fallback: Gemini Model {m_name} failed: {e}")
-                continue
-    elif llm_client_type == "openai":
+    if llm_client_type == "openai":
         try:
             messages = [{"role": "user", "content": prompt}]
             response = await asyncio.to_thread(
