@@ -13,20 +13,16 @@ from dotenv import load_dotenv
 
 from agents.planner import decompose_goal, detect_friction
 from agents.evaluator import evaluate_plan
-from core.opik_setup import get_trace_url, get_project_url
+from core.opik_setup import get_trace_url, get_project_url, get_project
 from core.database import get_db, PlanRecord
 from sqlalchemy.orm import Session
 from fastapi import Depends
 
 load_dotenv()
 
-# Configure Opik explicitly from environment variables
-opik.configure(
-    api_key=os.getenv("OPIK_API_KEY"),
-    workspace=os.getenv("OPIK_WORKSPACE")
-)
-
-app = FastAPI(title="Aletheia Backend")
+def configure_opik():
+    api_key = os.getenv("OPIK_API_KEY") or os.getenv("COMET_API_KEY")
+    workspace = os.getenv("OPIK_WORKSPACE") or os.getenv("COMET_WORKSPACE")
 
     # Ignore placeholder keys
     if api_key and ("your_" in api_key or "api_key" in api_key.lower()):
@@ -47,9 +43,20 @@ configure_opik()
 
 app = FastAPI(title="Aletheia Backend")
 
+allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+    "http://localhost:5173",
+    "https://aletheia-ruddy.vercel.app",
+    "https://aletheia-ruddy.vercel.app/",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"https://aletheia-.*\.vercel\.app", # Support all Vercel previews
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -69,18 +76,38 @@ async def root():
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
-    return {"status": "healthy", "timestamp": time.time()}
+    google_api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+    opik_api_key = os.getenv("OPIK_API_KEY") or os.getenv("COMET_API_KEY")
+
+    return {
+        "status": "healthy",
+        "timestamp": time.time(),
+        "diagnostics": {
+            "google_api_key_set": bool(google_api_key and "your_" not in google_api_key.lower()),
+            "opik_api_key_set": bool(opik_api_key and "your_" not in opik_api_key.lower()),
+            "google_api_key_env_name": "GOOGLE_API_KEY" if os.getenv("GOOGLE_API_KEY") else ("GEMINI_API_KEY" if os.getenv("GEMINI_API_KEY") else "None"),
+            "opik_workspace": os.getenv("OPIK_WORKSPACE") or os.getenv("COMET_WORKSPACE"),
+            "opik_project": os.getenv("OPIK_PROJECT_NAME") or os.getenv("OPIK_PROJECT") or os.getenv("COMET_PROJECT")
+        }
+    }
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    origin = request.headers.get("origin")
+    headers = {
+        "Access-Control-Allow-Methods": "*",
+        "Access-Control-Allow-Headers": "*",
+        "Access-Control-Allow-Credentials": "true",
+    }
+    if origin in allowed_origins:
+        headers["Access-Control-Allow-Origin"] = origin
+    elif len(allowed_origins) > 0:
+        headers["Access-Control-Allow-Origin"] = allowed_origins[-1] # Fallback to production
+
     return JSONResponse(
         status_code=500,
         content={"detail": str(exc), "type": type(exc).__name__},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
-        }
+        headers=headers
     )
     
 class GoalRequest(BaseModel):
@@ -130,17 +157,25 @@ async def get_history(user_email: str, db: Session = Depends(get_db)):
     ]
 
 @app.post("/api/plan", response_model=PlanResponse)
-@track(name="generate_plan_workflow")
+@track(name="generate_plan_workflow", project_name=get_project())
 async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     start_time = time.monotonic()
 
     # 1. Planner Agent
-    ai_tasks = await decompose_goal(request.goal)
+    try:
+        ai_tasks, planner_thought = await decompose_goal(request.goal)
+    except Exception as e:
+        # If the LLM fails, we raise an error instead of returning mock data
+        # this helps the user diagnose the issue (e.g. invalid API key)
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"Aletheia Planner Agent Error: {str(e)}")
+
     if not ai_tasks:
         ai_tasks = [{"title": "Initial Action", "description": "Define the first step for this goal.", "duration": "15m"}]
+        planner_thought = "Standardized fallback task generated due to empty model response."
 
     # 2. Friction/Monitor Agent
-    intervention = await detect_friction(request.goal, ai_tasks)
+    intervention, monitor_thought = await detect_friction(request.goal, ai_tasks)
     
     # 3. Evaluation Agent (Real scoring)
     scores = await evaluate_plan(request.goal, ai_tasks)
@@ -153,12 +188,12 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     elif any(w in goal_lower for w in ["job", "work", "career", "business", "money"]): category = "Professional"
 
     reasoning = [
-        AgentThought(agent="Planner", thought=f"Goal decomposed into {len(ai_tasks)} actionable spans."),
-        AgentThought(agent="Evaluator", thought=f"Plan verified with high {scores.get('relevance')} relevance score."),
-        AgentThought(agent="Monitor", thought="Friction detection complete. Predictive intervention generated.")
+        AgentThought(agent="Planner", thought=planner_thought),
+        AgentThought(agent="Evaluator", thought=scores.get("reasoning", "Plan verified for actionability and relevance.")),
+        AgentThought(agent="Monitor", thought=monitor_thought)
     ]
 
-    latency = int((time.time() - start_time) * 1000)
+    latency = int((time.monotonic() - start_time) * 1000)
 
     # Retrieve the ACTUAL Opik Trace ID for this request
     # This ensures the 'View in Comet' link actually works.
