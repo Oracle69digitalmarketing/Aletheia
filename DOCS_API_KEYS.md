@@ -6,7 +6,9 @@ To run Aletheia correctly, ensure the following environment variables are set.
 
 | Variable | Description |
 | :--- | :--- |
-| `GOOGLE_API_KEY` | **Required.** Your API key from Google AI Studio / Gemini Studio. (Fallback: `GEMINI_API_KEY`) |
+| `DEEPSEEK_API_KEY` | **Recommended.** Your DeepSeek API Key. |
+| `GROQ_API_KEY` | **Alternative.** Your Groq API Key. |
+| `OPENAI_API_KEY` | **Fallback.** Your OpenAI API Key. |
 | `OPIK_API_KEY` | **Recommended.** Your Opik/Comet API Key for tracing. (Fallback: `COMET_API_KEY`) |
 | `OPIK_WORKSPACE` | Your Opik/Comet workspace name. (Fallback: `COMET_WORKSPACE`) |
 | `OPIK_PROJECT_NAME` | The project name for Opik tracing. (Fallback: `OPIK_PROJECT`, `COMET_PROJECT`) |
