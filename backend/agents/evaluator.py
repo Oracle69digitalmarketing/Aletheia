@@ -87,5 +87,5 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict:
             "reasoning": scores.get("reasoning", "Plan verified for actionability and relevance.")
         }
     except Exception as e:
-        print(f"Evaluator JSON Parsing Error: {e} | Raw: {text[:200]}") # Increased raw text length for debug
+        print(f"Evaluator JSON Parsing Error: {e} | Raw: {text[:200]}")
         return _get_mock_scores(f"Parsing error in evaluation: {str(e)[:50]}")

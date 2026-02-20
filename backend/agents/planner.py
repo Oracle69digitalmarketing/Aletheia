@@ -61,26 +61,17 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
         return [], f"Model Error: {str(e)}"
 
     if not text:
-        print("Planner Agent Error: All models failed to generate tasks.")
-        return [], f"Model Error: All models failed. Last error: {last_error}"
+        return [], "Model Error: All models failed to generate tasks."
     try:
-        # Use regex to find the JSON object more robustly
-        # This looks for content between the first { and last }
         json_match = re.search(r"\{.*\}", text, re.DOTALL)
         if not json_match:
             raise ValueError("No JSON object found in model response.")
             
         cleaned_json_string = json_match.group(0)
-        
-        # Use Pydantic for parsing and validation
         planner_response = PlannerResponse.model_validate_json(cleaned_json_string)
-        
-        # The Task model in main.py has default values for id, status, category
-        # If the LLM returns only title, description, duration, Pydantic will fill the rest.
         return [task.model_dump() for task in planner_response.tasks], planner_response.reasoning
     except Exception as e:
         print(f"Planner Agent JSON Error: {e}")
-        print(f"Raw response text: {text}")
         return [], f"Parsing Error: Could not decode or validate model response. {str(e)}"
 
 @track(name="friction_agent")
@@ -126,18 +117,12 @@ async def detect_friction(goal: str, tasks: List[Dict]) -> Tuple[str, str]:
         return "I'll be monitoring your progress closely to ensure you stay on track.", "Standard fallback intervention used."
 
     try:
-        # Use regex to find the JSON object more robustly
         json_match = re.search(r"\{.*\}", text, re.DOTALL)
         if not json_match:
             raise ValueError("No JSON object found in model response.")
             
         cleaned_json_string = json_match.group(0)
-        
-        # Use Pydantic for parsing and validation
         friction_response = FrictionResponse.model_validate_json(cleaned_json_string)
-        
         return friction_response.intervention, friction_response.reasoning
     except Exception as e:
-        print(f"Monitor Agent JSON Error: {e}")
-        print(f"Raw response text: {text}")
         return "I'll be monitoring your progress closely (parsing failed).", f"Parsing Error: Could not decode or validate model response. {str(e)}"
