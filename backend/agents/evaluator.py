@@ -5,8 +5,6 @@ from opik import track
 from typing import Dict
 from core.agent_utils import get_llm_client
 
-OPENAI_MODEL = 'gpt-4o' # Or 'gpt-3.5-turbo' for cheaper/faster
-
 def _get_mock_scores(reasoning: str) -> Dict:
     return {
         "actionability": 4.5,
@@ -30,41 +28,36 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict:
         2. relevance (Strategic Judge: does it actually achieve the goal?)
         3. helpfulness (Coaching Judge: is the advice high quality?)
 
-    Return a JSON object with keys: "actionability", "relevance", "helpfulness" and a "reasoning" key (one sentence).
-    """
-        llm_client_info = get_llm_client() # Changed
-        llm_client_type = llm_client_info["type"]
+        Return a JSON object with keys: "actionability", "relevance", "helpfulness" and a "reasoning" key (one sentence).
+        """
+        llm_client_info = get_llm_client()
         llm_client = llm_client_info["client"]
-    except Exception as e: # Catch all exceptions for client initialization
+        llm_model = llm_client_info["model"]
+    except Exception as e:
         print(f"Evaluator Agent Configuration Error: {e}")
         return _get_mock_scores("Standard evaluation applied due to configuration error.")
 
     text = ""
-    last_error = "" # Initialize last_error here
+    try:
+        messages = [{"role": "user", "content": prompt}]
 
-    if llm_client_type == "openai":
-        try:
-            messages = [{"role": "user", "content": prompt}]
-            response = await asyncio.to_thread(
-                llm_client.chat.completions.create,
-                model=OPENAI_MODEL,
-                messages=messages,
-                response_format={"type": "json_object"} # Specify JSON output
-            )
-            text = response.choices[0].message.content.strip()
-        except Exception as e:
-            last_error = str(e)
-            print(f"Evaluator Fallback: OpenAI Model {OPENAI_MODEL} failed: {e}")
+        extra_args = {}
+        if llm_client_info["type"] in ["openai", "deepseek", "groq"]:
+            extra_args["response_format"] = {"type": "json_object"}
 
-        if not text:
-            # Fallback if no text is generated from any model
-            error_msg = str(last_error)
-            print(f"Evaluator Ensemble failed to generate any response from models. Last error: {error_msg}")
-            return _get_mock_scores(f"Model response error: {error_msg[:30]}")
-    else: # If client type is not openai, it implies an error in get_llm_client
-        error_msg = "LLM client not configured correctly (not OpenAI)."
-        print(f"Evaluator Agent Error: {error_msg}")
-        return _get_mock_scores(f"Model response error: {error_msg[:30]}")
+        response = await asyncio.to_thread(
+            llm_client.chat.completions.create,
+            model=llm_model,
+            messages=messages,
+            **extra_args
+        )
+        text = response.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"Evaluator Agent Error with {llm_client_info['type']} model {llm_model}: {e}")
+        return _get_mock_scores(f"Model response error: {str(e)[:30]}")
+
+    if not text:
+        return _get_mock_scores("Evaluator Ensemble failed to generate any response.")
     
     try:
         cleaned_text = text
@@ -94,5 +87,5 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict:
             "reasoning": scores.get("reasoning", "Plan verified for actionability and relevance.")
         }
     except Exception as e:
-        print(f"Evaluator JSON Parsing Error: {e} | Raw: {text[:200]}") # Increased raw text length for debug
+        print(f"Evaluator JSON Parsing Error: {e} | Raw: {text[:200]}")
         return _get_mock_scores(f"Parsing error in evaluation: {str(e)[:50]}")

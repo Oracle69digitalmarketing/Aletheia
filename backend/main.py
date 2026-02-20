@@ -85,14 +85,18 @@ async def root():
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
-    google_api_key = os.getenv("GOOGLE_API_KEY")
+    deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    openai_api_key = os.getenv("OPENAI_API_KEY")
     opik_api_key = os.getenv("OPIK_API_KEY")
 
     return {
         "status": "healthy",
         "timestamp": time.time(),
         "diagnostics": {
-            "google_api_key_set": bool(google_api_key and "your_" not in google_api_key.lower()),
+            "deepseek_api_key_set": bool(deepseek_api_key and "your_" not in deepseek_api_key.lower()),
+            "groq_api_key_set": bool(groq_api_key and "your_" not in groq_api_key.lower()),
+            "openai_api_key_set": bool(openai_api_key and "your_" not in openai_api_key.lower()),
             "opik_api_key_set": bool(opik_api_key and "your_" not in opik_api_key.lower()),
             "opik_workspace": os.getenv("OPIK_WORKSPACE")
         }
@@ -152,26 +156,16 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     intervention, monitor_thought = await detect_friction(request.goal, ai_tasks)
     
     # 3. Evaluation Agent (Real scoring)
-    google_api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
-    if not google_api_key or "your_" in google_api_key.lower():
-        print("WARNING: GOOGLE_API_KEY or GEMINI_API_KEY is missing or using placeholder. Assigning fallback scores.")
+    try:
+        scores = await evaluate_plan(request.goal, ai_tasks)
+    except Exception as e:
+        print(f"Evaluator Agent Error (caught in main.py): {e}")
         scores = {
             "actionability": 0.0,
             "relevance": 0.0,
             "helpfulness": 0.0,
-            "reasoning": "Evaluation skipped due to missing or invalid API key."
+            "reasoning": f"Evaluation failed due to: {str(e)[:50]}..."
         }
-    else:
-        try:
-            scores = await evaluate_plan(request.goal, ai_tasks)
-        except Exception as e:
-            print(f"Evaluator Agent Error (caught in main.py): {e}")
-            scores = {
-                "actionability": 0.0,
-                "relevance": 0.0,
-                "helpfulness": 0.0,
-                "reasoning": f"Evaluation failed due to: {str(e)[:50]}..."
-            }
     if scores is None:
         print("WARNING: evaluate_plan returned None. Assigning fallback scores.")
         scores = {
