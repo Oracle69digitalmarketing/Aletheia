@@ -205,7 +205,9 @@ const PlanDisplay: React.FC<PlanDisplayProps> = ({ plan }) => {
              <div className="grid grid-cols-2 gap-4">
                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
                  <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Score</div>
-                 <div className="text-lg font-bold text-slate-800">4.9/5</div>
+                 <div className="text-lg font-bold text-slate-800">
+                   {plan.metrics?.relevance ? `${plan.metrics.relevance.toFixed(1)}/5` : 'N/A'}
+                 </div>
                </div>
                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
                  <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Tasks</div>

@@ -4,10 +4,12 @@ import sys
 # Ensure the backend directory is in the path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+import asyncio
 import opik
 from opik.evaluation import evaluate
 from opik.evaluation.metrics import AnswerRelevance, Hallucination
 from agents.planner import decompose_goal
+from core.opik_setup import get_project
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,9 +18,14 @@ load_dotenv()
 def evaluation_task(x):
     # x is an item from our dataset
     goal = x['goal']
-    result = decompose_goal(goal)
-    # Return the result in a format that metrics can use
-    # Most Opik metrics expect 'output' and 'input' or 'context'
+    # decompose_goal is async, but evaluate() expects a sync function if not used with async task
+    try:
+        tasks, reasoning = asyncio.run(decompose_goal(goal))
+        result = tasks
+    except Exception as e:
+        print(f"Evaluation task failed for goal '{goal}': {e}")
+        result = []
+
     return {
         "output": str(result),
         "input": goal
@@ -60,7 +67,8 @@ def main():
         dataset=dataset,
         task=evaluation_task,
         metrics=[relevance_metric, Hallucination(), actionability_metric],
-        experiment_name="Aletheia Planning Experiment v1"
+        experiment_name="Aletheia Planning Experiment v1",
+        project_name=get_project()
     )
 
     print("Evaluation Complete!")
