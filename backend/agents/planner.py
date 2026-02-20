@@ -39,6 +39,7 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
         return [], f"Configuration Error: {str(e)}"
 
     text = ""
+    last_error = ""
     try:
         messages = [{"role": "user", "content": prompt}]
 
@@ -55,6 +56,7 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
         )
         text = response.choices[0].message.content.strip()
     except Exception as e:
+        last_error = str(e)
         print(f"Planner Agent Error with {llm_client_info['type']} model {llm_model}: {e}")
         return [], f"Model Error: {str(e)}"
 

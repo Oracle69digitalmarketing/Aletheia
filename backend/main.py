@@ -15,14 +15,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from opik import track
 from dotenv import load_dotenv
 from datetime import datetime # Added datetime import
-from typing import List
+from typing import List, Optional
 
 from agents.planner import decompose_goal, detect_friction
 from agents.evaluator import evaluate_plan
 from core.opik_setup import get_trace_url, get_project_url, get_project
-from core.database import get_db, PlanRecord
+from core.database import get_db, PlanRecord, User, Listing, Transaction
 from sqlalchemy.orm import Session
-from fastapi import Depends
+from fastapi import Depends, HTTPException
+
+from services import agri_service, market_service
 
 load_dotenv()
 
@@ -116,7 +118,10 @@ async def global_exception_handler(request: Request, exc: Exception):
         }
     )
     
-from backend.models import GoalRequest, LogEntry, AgentThought, Task, PlanMetrics, PlanResponse
+from backend.models import (
+    GoalRequest, LogEntry, AgentThought, Task, PlanMetrics, PlanResponse,
+    FarmerRegisterRequest, AdviceResponse, ListingCreateRequest
+)
 
 @app.get("/api/history", response_model=List[PlanResponse])
 async def get_history(user_email: str, db: Session = Depends(get_db)):
@@ -269,3 +274,40 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
         print(f"Database Save Error: {e}")
 
     return response_data
+
+# --- Ondo Connect Endpoints ---
+
+@app.post("/api/agri/farmer/register")
+async def register_farmer(request: FarmerRegisterRequest, db: Session = Depends(get_db)):
+    try:
+        user = await agri_service.register_farmer(db, request)
+        return {"status": "success", "user_id": user.id, "message": "Farmer registered successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/agri/advice/{farmer_id}", response_model=AdviceResponse)
+async def get_advice(farmer_id: str, db: Session = Depends(get_db)):
+    advice = await agri_service.get_farmer_advice(db, farmer_id)
+    if not advice:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    return advice
+
+@app.post("/api/market/listings")
+async def create_listing(request: ListingCreateRequest, db: Session = Depends(get_db)):
+    try:
+        listing = await market_service.create_listing(db, request)
+        return {"status": "success", "listing_id": listing.id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/market/search")
+async def search_listings(query: Optional[str] = None, type: Optional[str] = None, db: Session = Depends(get_db)):
+    listings = await market_service.search_listings(db, query, type)
+    return listings
+
+@app.get("/api/users/me")
+async def get_me(phone: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.phone == phone).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
