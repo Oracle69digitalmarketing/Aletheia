@@ -9,8 +9,6 @@ from core.agent_utils import get_llm_client
 from pydantic import BaseModel, Field # Import BaseModel and Field
 from models import Task, AgentThought # Import Task and AgentThought
 
-OPENAI_MODEL = 'gpt-4o' # Or 'gpt-3.5-turbo' for cheaper/faster
-
 class PlannerResponse(BaseModel):
     tasks: List[Task] = Field(..., description="A list of 3 objects with keys: 'title', 'description', 'duration'.")
     reasoning: str = Field(..., description="A one-sentence professional explanation of your planning logic.")
@@ -33,29 +31,34 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
     Do not include markdown formatting like ```json.
     """
     try:
-        llm_client_info = get_llm_client() # Changed
-        llm_client_type = llm_client_info["type"]
+        llm_client_info = get_llm_client()
         llm_client = llm_client_info["client"]
+        llm_model = llm_client_info["model"]
     except Exception as e:
         print(f"Planner Agent Configuration Error: {e}")
         return [], f"Configuration Error: {str(e)}"
 
     text = ""
     last_error = ""
+    try:
+        messages = [{"role": "user", "content": prompt}]
 
-    if llm_client_type == "openai":
-        try:
-            messages = [{"role": "user", "content": prompt}]
-            response = await asyncio.to_thread(
-                llm_client.chat.completions.create,
-                model=OPENAI_MODEL,
-                messages=messages,
-                response_format={"type": "json_object"} # Specify JSON output
-            )
-            text = response.choices[0].message.content.strip()
-        except Exception as e:
-            last_error = str(e)
-            print(f"Planner Fallback: OpenAI Model {OPENAI_MODEL} failed: {e}")
+        # Determine if JSON mode is supported/needed
+        extra_args = {}
+        if llm_client_info["type"] in ["openai", "deepseek", "groq"]:
+            extra_args["response_format"] = {"type": "json_object"}
+
+        response = await asyncio.to_thread(
+            llm_client.chat.completions.create,
+            model=llm_model,
+            messages=messages,
+            **extra_args
+        )
+        text = response.choices[0].message.content.strip()
+    except Exception as e:
+        last_error = str(e)
+        print(f"Planner Agent Error with {llm_client_info['type']} model {llm_model}: {e}")
+        return [], f"Model Error: {str(e)}"
 
     if not text:
         print("Planner Agent Error: All models failed to generate tasks.")
@@ -93,29 +96,31 @@ async def detect_friction(goal: str, tasks: List[Dict]) -> Tuple[str, str]:
     2. "reasoning": A one-sentence explanation of why you chose this intervention.
     """
     try:
-        llm_client_info = get_llm_client() # Changed
-        llm_client_type = llm_client_info["type"]
+        llm_client_info = get_llm_client()
         llm_client = llm_client_info["client"]
+        llm_model = llm_client_info["model"]
     except Exception as e:
         print(f"Monitor Agent Configuration Error: {e}")
         return "I'll be monitoring your progress closely.", "Default monitoring active due to configuration error."
 
     text = ""
-    last_error = ""
+    try:
+        messages = [{"role": "user", "content": prompt}]
 
-    if llm_client_type == "openai":
-        try:
-            messages = [{"role": "user", "content": prompt}]
-            response = await asyncio.to_thread(
-                llm_client.chat.completions.create,
-                model=OPENAI_MODEL,
-                messages=messages,
-                response_format={"type": "json_object"}
-            )
-            text = response.choices[0].message.content.strip()
-        except Exception as e:
-            last_error = str(e)
-            print(f"Monitor Fallback: OpenAI Model {OPENAI_MODEL} failed: {e}")
+        extra_args = {}
+        if llm_client_info["type"] in ["openai", "deepseek", "groq"]:
+            extra_args["response_format"] = {"type": "json_object"}
+
+        response = await asyncio.to_thread(
+            llm_client.chat.completions.create,
+            model=llm_model,
+            messages=messages,
+            **extra_args
+        )
+        text = response.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"Monitor Agent Error with {llm_client_info['type']} model {llm_model}: {e}")
+        return "I'll be monitoring your progress closely to ensure you stay on track.", "Standard fallback intervention used due to model error."
 
     if not text:
         return "I'll be monitoring your progress closely to ensure you stay on track.", "Standard fallback intervention used."
