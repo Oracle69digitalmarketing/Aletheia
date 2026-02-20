@@ -62,7 +62,7 @@ const App: React.FC = () => {
       {toast && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-bottom-4 fade-in duration-300">
           <div className={`px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border ${
-            toast.type === 'success' ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-rose-600 border-rose-500 text-white'
+            toast.type === 'success' ? 'bg-emerald-600 border-emerald-500 text-white' : 'bg-rose-600 border-rose-500 text-white'
           }`}>
             <div className="w-6 h-6 rounded-full flex items-center justify-center bg-white/20">
                <i className={`fa-solid ${toast.type === 'success' ? 'fa-check text-[10px]' : 'fa-exclamation text-[10px]'}`}></i>
@@ -80,13 +80,13 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex items-center justify-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-slate-100">
-              <img src="/logo.jpeg" alt="Aletheia Logo" className="w-full h-full object-cover" />
+              <img src="/logo.jpeg" alt="Ondo Connect Logo" className="w-full h-full object-cover" />
             </div>
-            <span className="text-slate-900 font-black text-xl tracking-tight">Aletheia</span>
+            <span className="text-slate-900 font-black text-xl tracking-tight">Ondo Connect</span>
           </div>
           <p className="text-slate-500 text-sm mb-8 max-w-lg mx-auto leading-relaxed">
-            Real-time agentic co-pilot for high-accountability goal orchestration. 
-            Integrated with Firebase Auth and Opik Observability.
+            Empowering the people of Ondo through Agriculture, Commerce, and a sustainable Circular Economy.
+            Built with production-grade infrastructure.
           </p>
           <div className="flex justify-center gap-6 mb-10">
             {[
@@ -108,7 +108,7 @@ const App: React.FC = () => {
           </div>
           <div className="pt-8 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">
-               &copy; 2026 Aletheia Engine &bull; Production Auth
+               &copy; 2026 Ondo Connect &bull; For a Prosperous Ondo State
              </p>
              <div className="flex gap-6">
                <a href="https://firebase.google.com/support/privacy" target="_blank" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-indigo-600">Privacy</a>

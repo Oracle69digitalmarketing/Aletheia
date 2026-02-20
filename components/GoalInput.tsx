@@ -17,17 +17,17 @@ const GoalInput: React.FC<GoalInputProps> = ({ onPlanGenerated, isLoading }) => 
   };
 
   const suggestions = [
-    "Learn Spanish in 3 months",
-    "Run a marathon this summer",
-    "Master React and Tailwind",
-    "Read 24 books this year"
+    "Best fertilizer for Cassava in Owo",
+    "Buy 50kg of Cocoa beans",
+    "Book a mechanic in Akure",
+    "Request plastic waste collection"
   ];
 
   return (
     <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8">
       <div className="max-w-3xl mx-auto">
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">What is your commitment?</h2>
-        <p className="text-slate-500 mb-8">Tell Aletheia your New Year's resolution. Our agents will decompose it into a proactive strategy.</p>
+        <h2 className="text-2xl font-bold text-slate-800 mb-2">How can we help you today?</h2>
+        <p className="text-slate-500 mb-8">Ask about farming advice, search the market, or book a local service in Ondo.</p>
         
         <form onSubmit={handleSubmit} className="mb-6">
           <div className="relative flex flex-col sm:block">
@@ -35,7 +35,7 @@ const GoalInput: React.FC<GoalInputProps> = ({ onPlanGenerated, isLoading }) => 
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
               disabled={isLoading}
-              placeholder="e.g. Learn to code and get a job in 2026"
+              placeholder="e.g. I need advice on my cocoa farm in Idanre"
               rows={2}
               className="w-full pl-6 pr-6 sm:pr-40 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-base sm:text-lg resize-none min-h-[100px]"
             />
