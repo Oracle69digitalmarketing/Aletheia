@@ -1,28 +1,37 @@
 
 import os
+import sys
+
+# Add the parent directory of 'backend' to sys.path to enable absolute imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import uuid
 import time
 import opik
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Optional
+
 from opik import track
 from dotenv import load_dotenv
+from datetime import datetime # Added datetime import
+from typing import List, Optional
 
 from agents.planner import decompose_goal, detect_friction
 from agents.evaluator import evaluate_plan
 from core.opik_setup import get_trace_url, get_project_url, get_project
-from core.database import get_db, PlanRecord
+from core.database import get_db, PlanRecord, User, Listing, Transaction
 from sqlalchemy.orm import Session
-from fastapi import Depends
+from fastapi import Depends, HTTPException
+
+from services import agri_service, market_service
 
 load_dotenv()
 
+# Configure Opik explicitly from environment variables with fallbacks
 def configure_opik():
-    api_key = os.getenv("OPIK_API_KEY") or os.getenv("COMET_API_KEY")
-    workspace = os.getenv("OPIK_WORKSPACE") or os.getenv("COMET_WORKSPACE")
+    api_key = os.getenv("OPIK_API_KEY")
+    workspace = os.getenv("OPIK_WORKSPACE")
 
     # Ignore placeholder keys
     if api_key and ("your_" in api_key or "api_key" in api_key.lower()):
@@ -45,18 +54,20 @@ app = FastAPI(title="Aletheia Backend")
 
 allowed_origins = [
     "http://localhost:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3001",
     "http://localhost:5173",
+    "https://aletheia-gfzrzo11w-oracle69.vercel.app",
     "https://aletheia-ruddy.vercel.app",
-    "https://aletheia-ruddy.vercel.app/",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_origin_regex=r"https://aletheia-.*\.vercel\.app", # Support all Vercel previews
+    allow_origins=[
+        "https://aletheia-gfzrzo11w-oracle69.vercel.app",
+        "https://aletheia-ruddy.vercel.app",
+        "https://aletheia-ruddy-vercel-app.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:3000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -76,69 +87,41 @@ async def root():
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
-    google_api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
-    opik_api_key = os.getenv("OPIK_API_KEY") or os.getenv("COMET_API_KEY")
+    deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    opik_api_key = os.getenv("OPIK_API_KEY")
 
     return {
         "status": "healthy",
         "timestamp": time.time(),
         "diagnostics": {
-            "google_api_key_set": bool(google_api_key and "your_" not in google_api_key.lower()),
+            "deepseek_api_key_set": bool(deepseek_api_key and "your_" not in deepseek_api_key.lower()),
+            "groq_api_key_set": bool(groq_api_key and "your_" not in groq_api_key.lower()),
+            "openai_api_key_set": bool(openai_api_key and "your_" not in openai_api_key.lower()),
             "opik_api_key_set": bool(opik_api_key and "your_" not in opik_api_key.lower()),
-            "google_api_key_env_name": "GOOGLE_API_KEY" if os.getenv("GOOGLE_API_KEY") else ("GEMINI_API_KEY" if os.getenv("GEMINI_API_KEY") else "None"),
-            "opik_workspace": os.getenv("OPIK_WORKSPACE") or os.getenv("COMET_WORKSPACE"),
-            "opik_project": os.getenv("OPIK_PROJECT_NAME") or os.getenv("OPIK_PROJECT") or os.getenv("COMET_PROJECT")
+            "opik_workspace": os.getenv("OPIK_WORKSPACE")
         }
     }
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    origin = request.headers.get("origin")
-    headers = {
-        "Access-Control-Allow-Methods": "*",
-        "Access-Control-Allow-Headers": "*",
-        "Access-Control-Allow-Credentials": "true",
-    }
-    if origin in allowed_origins:
-        headers["Access-Control-Allow-Origin"] = origin
-    elif len(allowed_origins) > 0:
-        headers["Access-Control-Allow-Origin"] = allowed_origins[-1] # Fallback to production
-
+    origin = request.headers.get("Origin", "*")
     return JSONResponse(
         status_code=500,
         content={"detail": str(exc), "type": type(exc).__name__},
-        headers=headers
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Credentials": "true",
+        }
     )
     
-class GoalRequest(BaseModel):
-    goal: str
-    user_email: Optional[str] = "anonymous"
-
-class AgentThought(BaseModel):
-    agent: str
-    thought: str
-
-class Task(BaseModel):
-    title: str
-    description: str
-    duration: str
-
-class PlanMetrics(BaseModel):
-    actionability: float
-    relevance: float
-    helpfulness: float
-    latency: int
-    project_url: str
-
-class PlanResponse(BaseModel):
-    id: str
-    trace_id: str
-    trace_url: str
-    category: str
-    tasks: List[Task]
-    reasoning: List[AgentThought]
-    friction_intervention: str
-    metrics: PlanMetrics
+from backend.models import (
+    GoalRequest, LogEntry, AgentThought, Task, PlanMetrics, PlanResponse,
+    FarmerRegisterRequest, AdviceResponse, ListingCreateRequest
+)
 
 @app.get("/api/history", response_model=List[PlanResponse])
 async def get_history(user_email: str, db: Session = Depends(get_db)):
@@ -159,7 +142,7 @@ async def get_history(user_email: str, db: Session = Depends(get_db)):
 @app.post("/api/plan", response_model=PlanResponse)
 @track(name="generate_plan_workflow", project_name=get_project())
 async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
-    start_time = time.monotonic()
+    start_time = time.time()
 
     # 1. Planner Agent
     try:
@@ -178,7 +161,24 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     intervention, monitor_thought = await detect_friction(request.goal, ai_tasks)
     
     # 3. Evaluation Agent (Real scoring)
-    scores = await evaluate_plan(request.goal, ai_tasks)
+    try:
+        scores = await evaluate_plan(request.goal, ai_tasks)
+    except Exception as e:
+        print(f"Evaluator Agent Error (caught in main.py): {e}")
+        scores = {
+            "actionability": 0.0,
+            "relevance": 0.0,
+            "helpfulness": 0.0,
+            "reasoning": f"Evaluation failed due to: {str(e)[:50]}..."
+        }
+    if scores is None:
+        print("WARNING: evaluate_plan returned None. Assigning fallback scores.")
+        scores = {
+            "actionability": 0.0,
+            "relevance": 0.0,
+            "helpfulness": 0.0,
+            "reasoning": "Evaluation failed: unexpected None from evaluate_plan."
+        }
     
     # 4. Categorization logic
     goal_lower = request.goal.lower()
@@ -188,15 +188,14 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     elif any(w in goal_lower for w in ["job", "work", "career", "business", "money"]): category = "Professional"
 
     reasoning = [
-        AgentThought(agent="Planner", thought=planner_thought),
-        AgentThought(agent="Evaluator", thought=scores.get("reasoning", "Plan verified for actionability and relevance.")),
-        AgentThought(agent="Monitor", thought=monitor_thought)
+        AgentThought(agent="Planner", thought=planner_thought, timestamp=datetime.now().isoformat()),
+        AgentThought(agent="Evaluator", thought=scores.get("reasoning", "Plan verified for actionability and relevance."), timestamp=datetime.now().isoformat()),
+        AgentThought(agent="Monitor", thought=monitor_thought, timestamp=datetime.now().isoformat())
     ]
 
     latency = int((time.monotonic() - start_time) * 1000)
 
     # Retrieve the ACTUAL Opik Trace ID for this request
-    # This ensures the 'View in Comet' link actually works.
     from opik import opik_context
     trace_data = opik_context.get_current_trace_data()
     trace_id = trace_data.id if trace_data else str(uuid.uuid4())
@@ -224,20 +223,35 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     print("="*50 + "\n")
 
     plan_id = str(uuid.uuid4())[:8]
+
+    # Prepare tasks with new fields
+    formatted_tasks = []
+    for task_dict in ai_tasks:
+        formatted_tasks.append(Task(
+            id=str(uuid.uuid4()),
+            title=task_dict.get('title', 'Untitled Task'),
+            description=task_dict.get('description', ''),
+            duration=task_dict.get('duration', '0m'),
+            status="todo",
+            category="Uncategorized"
+        ))
+
     response_data = {
         "id": plan_id,
-        "trace_id": trace_id,
-        "trace_url": get_trace_url(trace_id),
+        "originalGoal": request.goal,
         "category": category,
-        "tasks": [Task(**t) for t in ai_tasks],
-        "reasoning": reasoning,
-        "friction_intervention": intervention,
+        "tasks": formatted_tasks,
+        "agentReasoning": reasoning, # Renamed
+        "traceId": trace_id, # Renamed
+        "traceUrl": get_trace_url(trace_id), # Renamed
+        "logs": [], # Added logs
+        "frictionIntervention": intervention,
         "metrics": {
             "actionability": scores.get("actionability", 4.0),
             "relevance": scores.get("relevance", 4.0),
             "helpfulness": scores.get("helpfulness", 4.0),
             "latency": latency,
-            "project_url": get_project_url()
+            "projectUrl": get_project_url() # Renamed
         }
     }
 
@@ -248,8 +262,8 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
             user_email=request.user_email,
             goal=request.goal,
             category=category,
-            tasks=[t for t in ai_tasks],
-            reasoning=[{"agent": r.agent, "thought": r.thought} for r in reasoning],
+            tasks=[t.model_dump() for t in formatted_tasks], # Store as dictionaries
+            reasoning=[r.model_dump() for r in reasoning], # Store as dictionaries
             friction_intervention=intervention,
             metrics=response_data["metrics"],
             trace_id=trace_id
@@ -260,3 +274,40 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
         print(f"Database Save Error: {e}")
 
     return response_data
+
+# --- Ondo Connect Endpoints ---
+
+@app.post("/api/agri/farmer/register")
+async def register_farmer(request: FarmerRegisterRequest, db: Session = Depends(get_db)):
+    try:
+        user = await agri_service.register_farmer(db, request)
+        return {"status": "success", "user_id": user.id, "message": "Farmer registered successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/agri/advice/{farmer_id}", response_model=AdviceResponse)
+async def get_advice(farmer_id: str, db: Session = Depends(get_db)):
+    advice = await agri_service.get_farmer_advice(db, farmer_id)
+    if not advice:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    return advice
+
+@app.post("/api/market/listings")
+async def create_listing(request: ListingCreateRequest, db: Session = Depends(get_db)):
+    try:
+        listing = await market_service.create_listing(db, request)
+        return {"status": "success", "listing_id": listing.id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/market/search")
+async def search_listings(query: Optional[str] = None, type: Optional[str] = None, db: Session = Depends(get_db)):
+    listings = await market_service.search_listings(db, query, type)
+    return listings
+
+@app.get("/api/users/me")
+async def get_me(phone: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.phone == phone).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
