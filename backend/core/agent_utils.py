@@ -3,7 +3,7 @@ import openai
 
 def get_llm_client():
     """
-    Retrieves an LLM client (OpenAI).
+    Retrieves an LLM client (currently supports OpenAI).
     """
     openai_api_key = os.getenv("OPENAI_API_KEY")
     if openai_api_key and "your_" not in openai_api_key.lower():
