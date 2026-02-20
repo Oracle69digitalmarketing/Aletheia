@@ -193,7 +193,7 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
         AgentThought(agent="Monitor", thought=monitor_thought, timestamp=datetime.now().isoformat())
     ]
 
-    latency = int((time.time() - start_time) * 1000)
+    latency = int((time.monotonic() - start_time) * 1000)
 
     # Retrieve the ACTUAL Opik Trace ID for this request
     from opik import opik_context
