@@ -1,47 +1,42 @@
-
 import os
-from google import genai
-from opik.integrations.genai import track_genai
-from core.opik_setup import get_project
+import openai
 
-# Centralized model list with fallbacks
-MODELS = [
-    'gemini-2.0-flash',
-    'gemini-1.5-flash',
-    'gemini-1.5-flash-latest',
-    'gemini-1.5-flash-002',
-    'gemini-1.5-pro',
-    'gemini-1.5-flash-8b'
-]
-
-def get_genai_client():
+def get_llm_client():
     """
-    Retrieves the Google GenAI client.
-    Supports both GOOGLE_API_KEY and GEMINI_API_KEY (from Google AI Studio / Gemini Studio).
+    Retrieves an LLM client, prioritizing DeepSeek, then Groq, then OpenAI.
+    Returns a dictionary with 'type', 'client', and 'model'.
     """
-    raw_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+    # 1. DeepSeek
+    deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
+    if deepseek_api_key and "your_" not in deepseek_api_key.lower():
+        try:
+            print("Attempting to initialize DeepSeek client.")
+            client = openai.OpenAI(api_key=deepseek_api_key, base_url="https://api.deepseek.com")
+            print("DeepSeek client initialized successfully.")
+            return {"type": "deepseek", "client": client, "model": "deepseek-chat"}
+        except Exception as e:
+            print(f"DeepSeek client initialization failed: {e}.")
 
-    if not raw_key:
-        if os.getenv("MOCK_MODE", "true").lower() == "true":
-            return None
-        raise ValueError("CRITICAL: GOOGLE_API_KEY or GEMINI_API_KEY is missing. Set MOCK_MODE=true to bypass.")
+    # 2. Groq
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    if groq_api_key and "your_" not in groq_api_key.lower():
+        try:
+            print("Attempting to initialize Groq client.")
+            client = openai.OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
+            print("Groq client initialized successfully.")
+            return {"type": "groq", "client": client, "model": "llama-3.3-70b-versatile"}
+        except Exception as e:
+            print(f"Groq client initialization failed: {e}.")
 
-    # Sanitize Key: strip whitespace and any surrounding quotes that might have been added in Render/Vercel
-    api_key = raw_key.strip().strip('"').strip("'")
+    # 3. OpenAI (Fallback)
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if openai_api_key and "your_" not in openai_api_key.lower():
+        try:
+            print("Attempting to initialize OpenAI client.")
+            client = openai.OpenAI(api_key=openai_api_key)
+            print("OpenAI client initialized successfully.")
+            return {"type": "openai", "client": client, "model": "gpt-4o"}
+        except Exception as e:
+            print(f"OpenAI client initialization failed: {e}.")
 
-    # Check for placeholder
-    if "your_" in api_key.lower() or "api_key" in api_key.lower():
-        if os.getenv("MOCK_MODE", "true").lower() == "true":
-            print(f"Placeholder API Key detected ({api_key[:4]}...). Using Mock Mode.")
-            return None
-        raise ValueError(f"CRITICAL: API Key appears to be a placeholder: {api_key[:8]}...")
-
-    try:
-        # Try to use v1 for better compatibility with 1.5 models if v1beta fails
-        # Using the sanitized key
-        client = genai.Client(api_key=api_key, http_options={'api_version': 'v1'})
-        return track_genai(client, project_name=get_project())
-    except Exception as e:
-        print(f"GenAI Client Init Warning (v1 failed): {e}")
-        client = genai.Client(api_key=api_key)
-        return track_genai(client, project_name=get_project())
+    raise ValueError("No valid LLM client could be initialized. Please check your DEEPSEEK_API_KEY, GROQ_API_KEY, or OPENAI_API_KEY.")
