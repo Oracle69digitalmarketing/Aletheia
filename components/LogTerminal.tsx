@@ -10,11 +10,11 @@ const mockLogsTemplates = [
   { level: 'INFO', source: 'SYSTEM', message: 'Initializing Aletheia Agentic Workflow for: "{goal}"' },
   { level: 'TRACE', source: 'OPIK', message: 'Trace context created. Session ID: {session}' },
   { level: 'DEBUG', source: 'PLANNER', message: 'Analyzing goal structure and semantic intent...' },
-  { level: 'INFO', source: 'PLANNER', message: 'Decomposing milestones based on gemini-1.5-flash reasoning engine.' },
+  { level: 'INFO', source: 'PLANNER', message: 'Decomposing milestones based on DeepSeek and Groq reasoning engines.' },
   { level: 'DEBUG', source: 'MONITOR', message: 'Scanning for psychological friction and habit blockers...' },
   { level: 'INFO', source: 'MONITOR', message: 'Predictive friction analysis complete. Generating intervention.' },
   { level: 'DEBUG', source: 'ORCHESTRATOR', message: 'Calculating optimal task sequences and dependencies.' },
-  { level: 'TRACE', source: 'OPIK', message: 'Pushing intermediate reasoning span to Comet dashboard.' },
+  { level: 'TRACE', source: 'OPIK', message: 'Pushing intermediate reasoning span to Opik dashboard.' },
   { level: 'INFO', source: 'EVALUATOR', message: 'Running Actionability and Relevance judge.' },
   { level: 'DEBUG', source: 'SYSTEM', message: 'Finalizing response structure and formatting tasks...' },
 ];

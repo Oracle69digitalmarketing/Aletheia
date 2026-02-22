@@ -2,12 +2,12 @@
 import os
 import json
 import asyncio
-import re # Import re for regex
+import re
 from opik import track
 from typing import List, Dict, Tuple
 from core.agent_utils import get_llm_client
-from pydantic import BaseModel, Field # Import BaseModel and Field
-from models import Task, AgentThought # Import Task and AgentThought
+from pydantic import BaseModel, Field
+from models import Task, AgentThought
 
 class PlannerResponse(BaseModel):
     tasks: List[Task] = Field(..., description="A list of 3 objects with keys: 'title', 'description', 'duration'.")
@@ -16,6 +16,33 @@ class PlannerResponse(BaseModel):
 class FrictionResponse(BaseModel):
     intervention: str = Field(..., description="A one-sentence, encouraging, yet firm intervention quote.")
     reasoning: str = Field(..., description="A one-sentence explanation of why you chose this intervention.")
+
+async def _call_llm(client_info, prompt, response_model):
+    llm_client = client_info["client"]
+    llm_model = client_info["model"]
+    llm_type = client_info["type"]
+
+    if llm_type == "gemini":
+        response = await asyncio.to_thread(
+            llm_client.models.generate_content,
+            model=llm_model,
+            contents=prompt,
+            config={'response_mime_type': 'application/json'}
+        )
+        return response.text
+    else:
+        extra_args = {}
+        if llm_type in ["openai", "deepseek", "groq"]:
+            extra_args["response_format"] = {"type": "json_object"}
+
+        messages = [{"role": "user", "content": prompt}]
+        response = await asyncio.to_thread(
+            llm_client.chat.completions.create,
+            model=llm_model,
+            messages=messages,
+            **extra_args
+        )
+        return response.choices[0].message.content
 
 @track(name="planner_agent")
 async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
@@ -27,41 +54,22 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
     Return a JSON object with two keys:
     1. "tasks": A list of 3 objects with keys: "title", "description", "duration".
     2. "reasoning": A one-sentence professional explanation of your planning logic.
-
-    Do not include markdown formatting like ```json.
     """
     try:
         llm_client_info = get_llm_client()
-        llm_client = llm_client_info["client"]
-        llm_model = llm_client_info["model"]
     except Exception as e:
         print(f"Planner Agent Configuration Error: {e}")
         return [], f"Configuration Error: {str(e)}"
 
-    text = ""
-    last_error = ""
     try:
-        messages = [{"role": "user", "content": prompt}]
-
-        # Determine if JSON mode is supported/needed
-        extra_args = {}
-        if llm_client_info["type"] in ["openai", "deepseek", "groq"]:
-            extra_args["response_format"] = {"type": "json_object"}
-
-        response = await asyncio.to_thread(
-            llm_client.chat.completions.create,
-            model=llm_model,
-            messages=messages,
-            **extra_args
-        )
-        text = response.choices[0].message.content.strip()
+        text = await _call_llm(llm_client_info, prompt, PlannerResponse)
     except Exception as e:
-        last_error = str(e)
-        print(f"Planner Agent Error with {llm_client_info['type']} model {llm_model}: {e}")
+        print(f"Planner Agent Error: {e}")
         return [], f"Model Error: {str(e)}"
 
     if not text:
         return [], "Model Error: All models failed to generate tasks."
+
     try:
         json_match = re.search(r"\{.*\}", text, re.DOTALL)
         if not json_match:
@@ -88,29 +96,14 @@ async def detect_friction(goal: str, tasks: List[Dict]) -> Tuple[str, str]:
     """
     try:
         llm_client_info = get_llm_client()
-        llm_client = llm_client_info["client"]
-        llm_model = llm_client_info["model"]
     except Exception as e:
         print(f"Monitor Agent Configuration Error: {e}")
         return "I'll be monitoring your progress closely.", "Default monitoring active due to configuration error."
 
-    text = ""
     try:
-        messages = [{"role": "user", "content": prompt}]
-
-        extra_args = {}
-        if llm_client_info["type"] in ["openai", "deepseek", "groq"]:
-            extra_args["response_format"] = {"type": "json_object"}
-
-        response = await asyncio.to_thread(
-            llm_client.chat.completions.create,
-            model=llm_model,
-            messages=messages,
-            **extra_args
-        )
-        text = response.choices[0].message.content.strip()
+        text = await _call_llm(llm_client_info, prompt, FrictionResponse)
     except Exception as e:
-        print(f"Monitor Agent Error with {llm_client_info['type']} model {llm_model}: {e}")
+        print(f"Monitor Agent Error: {e}")
         return "I'll be monitoring your progress closely to ensure you stay on track.", "Standard fallback intervention used due to model error."
 
     if not text:
