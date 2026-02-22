@@ -53,7 +53,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onPlanUpdate, user }) => {
           )}
         </h1>
         <p className="text-lg text-slate-600 max-w-2xl mx-auto font-medium leading-relaxed">
-          Aletheia transforms resolutions into agent-orchestrated strategies 
+          Aletheia transforms resolutions into agent-orchestrated strategies
           with real Opik observability. Built for high-accountability seekers.
         </p>
       </div>
