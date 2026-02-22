@@ -8,12 +8,6 @@ from typing import Dict
 from core.agent_utils import get_llm_client
 from pydantic import BaseModel, Field
 
-class EvaluationResponse(BaseModel):
-    actionability: float = Field(..., ge=0.0, le=5.0)
-    relevance: float = Field(..., ge=0.0, le=5.0)
-    helpfulness: float = Field(..., ge=0.0, le=5.0)
-    reasoning: str
-
 def _get_mock_scores(reasoning: str) -> Dict:
     return {
         "actionability": 4.5,
@@ -36,10 +30,8 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict:
     2. relevance (Strategic Judge: does it actually achieve the goal?)
     3. helpfulness (Coaching Judge: is the advice high quality?)
 
-    Return a JSON object with keys: "actionability", "relevance", "helpfulness" and a "reasoning" key (one sentence).
-    """
-
-    try:
+        Return a JSON object with keys: "actionability", "relevance", "helpfulness" and a "reasoning" key (one sentence).
+        """
         llm_client_info = get_llm_client()
         llm_client = llm_client_info["client"]
         llm_model = llm_client_info["model"]
@@ -64,10 +56,10 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict:
         text = response.choices[0].message.content.strip()
     except Exception as e:
         print(f"Evaluator Agent Error with {llm_client_info['type']} model {llm_model}: {e}")
-        return _get_mock_scores(f"Model response error: {str(e)[:50]}")
+        return _get_mock_scores(f"Model response error: {str(e)[:30]}")
 
     if not text:
-        return _get_mock_scores("Model failed to generate evaluation.")
+        return _get_mock_scores("Evaluator Ensemble failed to generate any response.")
     
     try:
         json_match = re.search(r"\{.*\}", text, re.DOTALL)
