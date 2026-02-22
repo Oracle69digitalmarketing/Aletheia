@@ -5,7 +5,7 @@ import asyncio
 import re
 from opik import track
 from typing import List, Dict, Tuple
-from core.agent_utils import get_llm_client
+from core.agent_utils import get_all_llm_clients
 from pydantic import BaseModel, Field
 from models import Task, AgentThought
 
@@ -17,7 +17,7 @@ class FrictionResponse(BaseModel):
     intervention: str = Field(..., description="A one-sentence, encouraging, yet firm intervention quote.")
     reasoning: str = Field(..., description="A one-sentence explanation of why you chose this intervention.")
 
-async def _call_llm(client_info, prompt, response_model):
+async def _call_llm(client_info, prompt):
     llm_client = client_info["client"]
     llm_model = client_info["model"]
     llm_type = client_info["type"]
@@ -55,32 +55,30 @@ async def decompose_goal(goal: str) -> Tuple[List[Dict], str]:
     1. "tasks": A list of 3 objects with keys: "title", "description", "duration".
     2. "reasoning": A one-sentence professional explanation of your planning logic.
     """
-    try:
-        llm_client_info = get_llm_client()
-    except Exception as e:
-        print(f"Planner Agent Configuration Error: {e}")
-        return [], f"Configuration Error: {str(e)}"
+    clients = get_all_llm_clients()
+    if not clients:
+        return [], "Configuration Error: No valid LLM clients found."
 
-    try:
-        text = await _call_llm(llm_client_info, prompt, PlannerResponse)
-    except Exception as e:
-        print(f"Planner Agent Error: {e}")
-        return [], f"Model Error: {str(e)}"
+    last_error = ""
+    for client_info in clients:
+        try:
+            text = await _call_llm(client_info, prompt)
+            if not text:
+                continue
 
-    if not text:
-        return [], "Model Error: All models failed to generate tasks."
+            json_match = re.search(r"\{.*\}", text, re.DOTALL)
+            if not json_match:
+                continue
 
-    try:
-        json_match = re.search(r"\{.*\}", text, re.DOTALL)
-        if not json_match:
-            raise ValueError("No JSON object found in model response.")
-            
-        cleaned_json_string = json_match.group(0)
-        planner_response = PlannerResponse.model_validate_json(cleaned_json_string)
-        return [task.model_dump() for task in planner_response.tasks], planner_response.reasoning
-    except Exception as e:
-        print(f"Planner Agent JSON Error: {e}")
-        return [], f"Parsing Error: Could not decode or validate model response. {str(e)}"
+            cleaned_json_string = json_match.group(0)
+            planner_response = PlannerResponse.model_validate_json(cleaned_json_string)
+            return [task.model_dump() for task in planner_response.tasks], planner_response.reasoning
+        except Exception as e:
+            last_error = str(e)
+            print(f"Planner Agent ({client_info['type']}) failed: {e}")
+            continue
+
+    return [], f"Model Error: All models failed. Last error: {last_error}"
 
 @track(name="friction_agent")
 async def detect_friction(goal: str, tasks: List[Dict]) -> Tuple[str, str]:
@@ -94,28 +92,27 @@ async def detect_friction(goal: str, tasks: List[Dict]) -> Tuple[str, str]:
     1. "intervention": A one-sentence, encouraging, yet firm intervention quote.
     2. "reasoning": A one-sentence explanation of why you chose this intervention.
     """
-    try:
-        llm_client_info = get_llm_client()
-    except Exception as e:
-        print(f"Monitor Agent Configuration Error: {e}")
+    clients = get_all_llm_clients()
+    if not clients:
         return "I'll be monitoring your progress closely.", "Default monitoring active due to configuration error."
 
-    try:
-        text = await _call_llm(llm_client_info, prompt, FrictionResponse)
-    except Exception as e:
-        print(f"Monitor Agent Error: {e}")
-        return "I'll be monitoring your progress closely to ensure you stay on track.", "Standard fallback intervention used due to model error."
+    last_error = ""
+    for client_info in clients:
+        try:
+            text = await _call_llm(client_info, prompt)
+            if not text:
+                continue
 
-    if not text:
-        return "I'll be monitoring your progress closely to ensure you stay on track.", "Standard fallback intervention used."
+            json_match = re.search(r"\{.*\}", text, re.DOTALL)
+            if not json_match:
+                continue
 
-    try:
-        json_match = re.search(r"\{.*\}", text, re.DOTALL)
-        if not json_match:
-            raise ValueError("No JSON object found in model response.")
-            
-        cleaned_json_string = json_match.group(0)
-        friction_response = FrictionResponse.model_validate_json(cleaned_json_string)
-        return friction_response.intervention, friction_response.reasoning
-    except Exception as e:
-        return "I'll be monitoring your progress closely (parsing failed).", f"Parsing Error: Could not decode or validate model response. {str(e)}"
+            cleaned_json_string = json_match.group(0)
+            friction_response = FrictionResponse.model_validate_json(cleaned_json_string)
+            return friction_response.intervention, friction_response.reasoning
+        except Exception as e:
+            last_error = str(e)
+            print(f"Monitor Agent ({client_info['type']}) failed: {e}")
+            continue
+
+    return "I'll be monitoring your progress closely to ensure you stay on track.", f"Standard fallback used. Last error: {last_error}"
