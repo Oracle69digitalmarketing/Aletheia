@@ -23,7 +23,6 @@ from core.opik_setup import get_trace_url, get_project_url, get_project
 from core.database import get_db, PlanRecord
 from sqlalchemy.orm import Session
 from fastapi import Depends
-from core.agent_utils import get_llm_client
 
 load_dotenv()
 
