@@ -1,5 +1,7 @@
 import os
 import openai
+from google import genai
+from google.genai import types
 
 try:
     from google import genai
@@ -48,9 +50,14 @@ def get_llm_client():
 
     # 4. Google Gemini (Fallback)
     google_api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
-    if google_api_key and "your_" not in google_api_key.lower() and HAS_GENAI:
+    if google_api_key and "your_" not in google_api_key.lower():
         try:
             print("Attempting to initialize Google Gemini client.")
+            # Wrap Gemini in an OpenAI-compatible interface if possible, or handle separately.
+            # For now, we will return the genai client but the agents need to handle it.
+            # Since agents expect chat.completions.create, we might need a wrapper.
+            # To keep it simple and consistent with existing code, let's use the genai client
+            # and let agents handle the 'gemini' type.
             client = genai.Client(api_key=google_api_key)
             print("Google Gemini client initialized successfully.")
             return {"type": "gemini", "client": client, "model": "gemini-1.5-flash"}
