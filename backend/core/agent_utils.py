@@ -3,6 +3,13 @@ import openai
 from google import genai
 from google.genai import types
 
+try:
+    from google import genai
+    from google.genai import types
+    HAS_GENAI = True
+except ImportError:
+    HAS_GENAI = False
+
 def get_llm_client():
     """
     Retrieves an LLM client, prioritizing DeepSeek, then Groq, then OpenAI, then Google Gemini.
