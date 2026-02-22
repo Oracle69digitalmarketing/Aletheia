@@ -5,7 +5,7 @@ import asyncio
 import re
 from opik import track
 from typing import Dict
-from core.agent_utils import get_all_llm_clients
+from core.agent_utils import get_llm_client
 from pydantic import BaseModel, Field
 
 class EvaluationResponse(BaseModel):
@@ -66,27 +66,29 @@ async def evaluate_plan(goal: str, tasks: list) -> Dict:
     Return a JSON object with keys: "actionability", "relevance", "helpfulness" and a "reasoning" key (one sentence).
     """
 
-    clients = get_all_llm_clients()
-    if not clients:
-        return _get_mock_scores("Configuration Error: No valid LLM clients found.")
+    try:
+        llm_client_info = get_llm_client()
+    except Exception as e:
+        print(f"Evaluator Agent Configuration Error: {e}")
+        return _get_mock_scores(f"Standard evaluation applied due to configuration error: {str(e)}")
 
-    last_error = ""
-    for client_info in clients:
-        try:
-            text = await _call_llm(client_info, prompt)
-            if not text:
-                continue
+    try:
+        text = await _call_llm(llm_client_info, prompt)
+    except Exception as e:
+        print(f"Evaluator Agent Error: {e}")
+        return _get_mock_scores(f"Model response error: {str(e)[:50]}")
 
-            json_match = re.search(r"\{.*\}", text, re.DOTALL)
-            if not json_match:
-                continue
+    if not text:
+        return _get_mock_scores("Model failed to generate evaluation.")
+    
+    try:
+        json_match = re.search(r"\{.*\}", text, re.DOTALL)
+        if not json_match:
+            raise ValueError("No JSON object found in model response.")
 
-            cleaned_json_string = json_match.group(0)
-            eval_response = EvaluationResponse.model_validate_json(cleaned_json_string)
-            return eval_response.model_dump()
-        except Exception as e:
-            last_error = str(e)
-            print(f"Evaluator Agent ({client_info['type']}) failed: {e}")
-            continue
-
-    return _get_mock_scores(f"Evaluation failed. Last error: {last_error[:50]}...")
+        cleaned_json_string = json_match.group(0)
+        eval_response = EvaluationResponse.model_validate_json(cleaned_json_string)
+        return eval_response.model_dump()
+    except Exception as e:
+        print(f"Evaluator JSON Parsing Error: {e} | Raw: {text[:200]}")
+        return _get_mock_scores(f"Parsing error in evaluation: {str(e)[:50]}")
