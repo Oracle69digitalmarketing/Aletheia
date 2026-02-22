@@ -1,5 +1,5 @@
 import os
-import openai
+from openai import OpenAI
 
 try:
     from google import genai
