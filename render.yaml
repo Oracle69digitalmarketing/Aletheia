@@ -3,11 +3,15 @@ services:
     name: aletheia-backend
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: PYTHONPATH=$PYTHONPATH:$(pwd)/backend uvicorn backend.main:app --host 0.0.0.0 --port $PORT
     envVars:
-      - key: OPIK_API_KEY
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
         sync: false
       - key: OPENAI_API_KEY
+        sync: false
+      - key: OPIK_API_KEY
         sync: false
     healthCheckPath: /health
     autoDeploy: true
