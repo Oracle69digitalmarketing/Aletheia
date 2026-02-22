@@ -4,6 +4,8 @@ To run Aletheia correctly, ensure the following environment variables are set.
 
 ## Backend Environment Variables (`backend/.env`)
 
+Aletheia prioritizes LLM providers in the following order: **DeepSeek > Groq > Google/OpenAI**.
+
 | Variable | Description |
 | :--- | :--- |
 | `DEEPSEEK_API_KEY` | **Recommended.** Your DeepSeek API Key. |
@@ -20,15 +22,7 @@ To run Aletheia correctly, ensure the following environment variables are set.
 | Variable | Description |
 | :--- | :--- |
 | `VITE_API_URL` | The URL where your backend is hosted (e.g., `http://localhost:8000`). |
-| `GEMINI_API_KEY` | (Optional) Injected into the frontend for specific client-side features. |
 
 ## Firebase Configuration (`services/firebase.ts`)
 
 Currently hardcoded in `services/firebase.ts`. For production, these should ideally be moved to environment variables prefixed with `VITE_`.
-
-- `apiKey`
-- `authDomain`
-- `projectId`
-- `storageBucket`
-- `messagingSenderId`
-- `appId`

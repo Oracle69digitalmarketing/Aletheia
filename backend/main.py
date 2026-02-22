@@ -52,13 +52,6 @@ configure_opik()
 
 app = FastAPI(title="Aletheia Backend")
 
-allowed_origins = [
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "https://aletheia-gfzrzo11w-oracle69.vercel.app",
-    "https://aletheia-ruddy.vercel.app",
-]
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -91,6 +84,9 @@ async def health():
     groq_api_key = os.getenv("GROQ_API_KEY")
     openai_api_key = os.getenv("OPENAI_API_KEY")
     opik_api_key = os.getenv("OPIK_API_KEY")
+
+    def is_valid(k):
+        return bool(k and "your_" not in k.lower() and "api_key" not in k.lower())
 
     return {
         "status": "healthy",
@@ -148,8 +144,6 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     try:
         ai_tasks, planner_thought = await decompose_goal(request.goal)
     except Exception as e:
-        # If the LLM fails, we raise an error instead of returning mock data
-        # this helps the user diagnose the issue (e.g. invalid API key)
         from fastapi import HTTPException
         raise HTTPException(status_code=500, detail=f"Aletheia Planner Agent Error: {str(e)}")
 
@@ -172,7 +166,6 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
             "reasoning": f"Evaluation failed due to: {str(e)[:50]}..."
         }
     if scores is None:
-        print("WARNING: evaluate_plan returned None. Assigning fallback scores.")
         scores = {
             "actionability": 0.0,
             "relevance": 0.0,
@@ -241,17 +234,17 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
         "originalGoal": request.goal,
         "category": category,
         "tasks": formatted_tasks,
-        "agentReasoning": reasoning, # Renamed
-        "traceId": trace_id, # Renamed
-        "traceUrl": get_trace_url(trace_id), # Renamed
-        "logs": [], # Added logs
+        "agentReasoning": reasoning,
+        "traceId": trace_id,
+        "traceUrl": get_trace_url(trace_id),
+        "logs": [],
         "frictionIntervention": intervention,
         "metrics": {
             "actionability": scores.get("actionability", 4.0),
             "relevance": scores.get("relevance", 4.0),
             "helpfulness": scores.get("helpfulness", 4.0),
             "latency": latency,
-            "projectUrl": get_project_url() # Renamed
+            "projectUrl": get_project_url()
         }
     }
 
@@ -262,8 +255,8 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
             user_email=request.user_email,
             goal=request.goal,
             category=category,
-            tasks=[t.model_dump() for t in formatted_tasks], # Store as dictionaries
-            reasoning=[r.model_dump() for r in reasoning], # Store as dictionaries
+            tasks=[t.model_dump() for t in formatted_tasks],
+            reasoning=[r.model_dump() for r in reasoning],
             friction_intervention=intervention,
             metrics=response_data["metrics"],
             trace_id=trace_id
