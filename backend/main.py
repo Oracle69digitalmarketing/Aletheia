@@ -102,6 +102,22 @@ async def health():
         }
     }
 
+@app.get("/debug/env-check")
+async def debug_env():
+    """Check which environment variables exist (NOT their values!) for diagnostics."""
+    def is_valid(k):
+        return bool(k and "your_" not in k.lower() and "api_key" not in k.lower())
+
+    return {
+        "has_deepseek": is_valid(os.getenv("DEEPSEEK_API_KEY")),
+        "has_groq": is_valid(os.getenv("GROQ_API_KEY")),
+        "has_openai": is_valid(os.getenv("OPENAI_API_KEY")),
+        "has_google": is_valid(os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")),
+        "env_keys_count": len(os.environ.keys()),
+        "key_names_present": [k for k in os.environ.keys() if 'KEY' in k or 'SECRET' in k],
+        "warning": "This endpoint only checks presence, not validity"
+    }
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     origin = request.headers.get("Origin", "*")
