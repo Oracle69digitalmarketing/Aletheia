@@ -68,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({ projectUrl, user, onConnect, onDisconne
                 rel="noopener noreferrer"
                 className="text-slate-500 hover:text-indigo-600 transition-colors text-sm font-bold flex items-center gap-1.5"
               >
-                Opik Trace
+                Opik Control Plane
                 <i className="fa-solid fa-external-link text-[10px]"></i>
               </a>
 

@@ -24,7 +24,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onPlanUpdate, user }) => {
     setError(null);
     setLastGoal(goal);
     try {
-      const plan = await generateAgenticPlan(goal);
+      const plan = await generateAgenticPlan(goal, user?.email);
       if (plan) {
         setCurrentPlan(plan);
         setView('strategy');
@@ -163,7 +163,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onPlanUpdate, user }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-10">
               {[
                 { icon: 'fa-microchip', title: 'Agentic Ensemble', desc: 'Planner, Orchestrator, and Monitor agents work together to validate your goal.' },
-                { icon: 'fa-eye', title: 'Real Opik Tracing', desc: 'Every reasoning step is pushed to your Comet workspace for production-grade observability.' },
+                { icon: 'fa-eye', title: 'Real Opik Tracing', desc: 'Every reasoning step is pushed to your Opik workspace for production-grade observability.' },
                 { icon: 'fa-shield-heart', title: 'Friction Detection', desc: 'Our agents proactively identify obstacles before they derail your commitment.' }
               ].map((feature, i) => (
                 <div key={i} className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl hover:border-indigo-100 transition-all group">
