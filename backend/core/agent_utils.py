@@ -3,15 +3,10 @@ from openai import OpenAI
 
 try:
     from google import genai
+    from google.genai import types
     HAS_GENAI = True
 except ImportError:
     HAS_GENAI = False
-
-try:
-    from groq import Groq
-    HAS_GROQ_PACKAGE = True
-except ImportError:
-    HAS_GROQ_PACKAGE = False
 
 def get_all_llm_clients():
     """
@@ -20,11 +15,11 @@ def get_all_llm_clients():
     """
     clients = []
 
-    # 1. DeepSeek (uses OpenAI client)
+    # 1. DeepSeek
     deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
     if deepseek_api_key and "your_" not in deepseek_api_key.lower():
         try:
-            client = OpenAI(api_key=deepseek_api_key, base_url="https://api.deepseek.com")
+            client = openai.OpenAI(api_key=deepseek_api_key, base_url="https://api.deepseek.com")
             clients.append({"type": "deepseek", "client": client, "model": "deepseek-chat"})
         except Exception as e:
             print(f"DeepSeek initialization failed: {e}")
@@ -33,13 +28,8 @@ def get_all_llm_clients():
     groq_api_key = os.getenv("GROQ_API_KEY")
     if groq_api_key and "your_" not in groq_api_key.lower():
         try:
-            if HAS_GROQ_PACKAGE:
-                client = Groq(api_key=groq_api_key)
-                clients.append({"type": "groq", "client": client, "model": "llama-3.3-70b-versatile"})
-            else:
-                # Fallback to OpenAI client for Groq if package is missing
-                client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
-                clients.append({"type": "groq", "client": client, "model": "llama-3.3-70b-versatile"})
+            client = openai.OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
+            clients.append({"type": "groq", "client": client, "model": "llama-3.3-70b-versatile"})
         except Exception as e:
             print(f"Groq initialization failed: {e}")
 
@@ -47,7 +37,7 @@ def get_all_llm_clients():
     openai_api_key = os.getenv("OPENAI_API_KEY")
     if openai_api_key and "your_" not in openai_api_key.lower():
         try:
-            client = OpenAI(api_key=openai_api_key)
+            client = openai.OpenAI(api_key=openai_api_key)
             clients.append({"type": "openai", "client": client, "model": "gpt-4o"})
         except Exception as e:
             print(f"OpenAI initialization failed: {e}")
@@ -65,11 +55,9 @@ def get_all_llm_clients():
 
 def get_llm_client():
     """
-    Returns the primary LLM client.
+    Retrieves the primary LLM client. Included for backward compatibility.
     """
     clients = get_all_llm_clients()
     if not clients:
-        # Fallback to a dummy if nothing is set, to avoid import errors
-        print("Warning: No LLM API keys found.")
-        return None
-    return clients[0]["client"]
+        raise ValueError("No valid LLM client could be initialized. Please check your API keys.")
+    return clients[0]

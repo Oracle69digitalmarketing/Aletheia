@@ -85,7 +85,7 @@ const App: React.FC = () => {
             <span className="text-slate-900 font-black text-xl tracking-tight">Aletheia</span>
           </div>
           <p className="text-slate-500 text-sm mb-8 max-w-lg mx-auto leading-relaxed">
-            Real-time agentic co-pilot for high-accountability goal orchestration. 
+            Real-time agentic co-pilot for high-accountability goal orchestration.
             Integrated with Firebase Auth and Opik Observability.
           </p>
           <div className="flex justify-center gap-6 mb-10">

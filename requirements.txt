@@ -6,5 +6,4 @@ python-dotenv==1.0.0
 sqlalchemy
 openai
 google-genai
-groq
 pytest
