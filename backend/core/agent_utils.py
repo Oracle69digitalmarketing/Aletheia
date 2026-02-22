@@ -10,7 +10,14 @@ try:
 except ImportError:
     HAS_GENAI = False
 
-def get_llm_client():
+try:
+    from google import genai
+    from google.genai import types
+    HAS_GENAI = True
+except ImportError:
+    HAS_GENAI = False
+
+def get_all_llm_clients():
     """
     Retrieves an LLM client, prioritizing DeepSeek, then Groq, then OpenAI, then Google Gemini.
     Returns a dictionary with 'type', 'client', and 'model'.
@@ -41,12 +48,11 @@ def get_llm_client():
     openai_api_key = os.getenv("OPENAI_API_KEY")
     if openai_api_key and "your_" not in openai_api_key.lower():
         try:
-            print("Attempting to initialize OpenAI client.")
             client = openai.OpenAI(api_key=openai_api_key)
             print("OpenAI client initialized successfully.")
             return {"type": "openai", "client": client, "model": "gpt-4o"}
         except Exception as e:
-            print(f"OpenAI client initialization failed: {e}.")
+            print(f"Gemini initialization failed: {e}")
 
     # 4. Google Gemini (Fallback)
     google_api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
