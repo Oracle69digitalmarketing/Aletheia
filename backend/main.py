@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from opik import track
 from dotenv import load_dotenv
-from datetime import datetime # Added datetime import
+from datetime import datetime
 from typing import List
 
 from agents.planner import decompose_goal, detect_friction
@@ -50,13 +50,6 @@ configure_opik()
 
 app = FastAPI(title="Aletheia Backend")
 
-allowed_origins = [
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "https://aletheia-gfzrzo11w-oracle69.vercel.app",
-    "https://aletheia-ruddy.vercel.app",
-]
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -64,7 +57,9 @@ app.add_middleware(
         "https://aletheia-ruddy.vercel.app",
         "https://aletheia-ruddy-vercel-app.vercel.app",
         "http://localhost:5173",
-        "http://localhost:3000"
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -85,15 +80,24 @@ async def root():
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
-    google_api_key = os.getenv("GOOGLE_API_KEY")
+    google_api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+    deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    openai_api_key = os.getenv("OPENAI_API_KEY")
     opik_api_key = os.getenv("OPIK_API_KEY")
+
+    def is_valid(k):
+        return bool(k and "your_" not in k.lower() and "api_key" not in k.lower())
 
     return {
         "status": "healthy",
         "timestamp": time.time(),
         "diagnostics": {
-            "google_api_key_set": bool(google_api_key and "your_" not in google_api_key.lower()),
-            "opik_api_key_set": bool(opik_api_key and "your_" not in opik_api_key.lower()),
+            "deepseek_api_key_set": is_valid(deepseek_api_key),
+            "groq_api_key_set": is_valid(groq_api_key),
+            "openai_api_key_set": is_valid(openai_api_key),
+            "google_api_key_set": is_valid(google_api_key),
+            "opik_api_key_set": is_valid(opik_api_key),
             "opik_workspace": os.getenv("OPIK_WORKSPACE")
         }
     }
@@ -139,8 +143,6 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     try:
         ai_tasks, planner_thought = await decompose_goal(request.goal)
     except Exception as e:
-        # If the LLM fails, we raise an error instead of returning mock data
-        # this helps the user diagnose the issue (e.g. invalid API key)
         from fastapi import HTTPException
         raise HTTPException(status_code=500, detail=f"Aletheia Planner Agent Error: {str(e)}")
 
@@ -152,28 +154,18 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
     intervention, monitor_thought = await detect_friction(request.goal, ai_tasks)
     
     # 3. Evaluation Agent (Real scoring)
-    google_api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
-    if not google_api_key or "your_" in google_api_key.lower():
-        print("WARNING: GOOGLE_API_KEY or GEMINI_API_KEY is missing or using placeholder. Assigning fallback scores.")
+    try:
+        scores = await evaluate_plan(request.goal, ai_tasks)
+    except Exception as e:
+        print(f"Evaluator Agent Error (caught in main.py): {e}")
         scores = {
             "actionability": 0.0,
             "relevance": 0.0,
             "helpfulness": 0.0,
-            "reasoning": "Evaluation skipped due to missing or invalid API key."
+            "reasoning": f"Evaluation failed due to: {str(e)[:50]}..."
         }
-    else:
-        try:
-            scores = await evaluate_plan(request.goal, ai_tasks)
-        except Exception as e:
-            print(f"Evaluator Agent Error (caught in main.py): {e}")
-            scores = {
-                "actionability": 0.0,
-                "relevance": 0.0,
-                "helpfulness": 0.0,
-                "reasoning": f"Evaluation failed due to: {str(e)[:50]}..."
-            }
+
     if scores is None:
-        print("WARNING: evaluate_plan returned None. Assigning fallback scores.")
         scores = {
             "actionability": 0.0,
             "relevance": 0.0,
@@ -242,17 +234,17 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
         "originalGoal": request.goal,
         "category": category,
         "tasks": formatted_tasks,
-        "agentReasoning": reasoning, # Renamed
-        "traceId": trace_id, # Renamed
-        "traceUrl": get_trace_url(trace_id), # Renamed
-        "logs": [], # Added logs
+        "agentReasoning": reasoning,
+        "traceId": trace_id,
+        "traceUrl": get_trace_url(trace_id),
+        "logs": [],
         "frictionIntervention": intervention,
         "metrics": {
             "actionability": scores.get("actionability", 4.0),
             "relevance": scores.get("relevance", 4.0),
             "helpfulness": scores.get("helpfulness", 4.0),
             "latency": latency,
-            "projectUrl": get_project_url() # Renamed
+            "projectUrl": get_project_url()
         }
     }
 
@@ -263,8 +255,8 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
             user_email=request.user_email,
             goal=request.goal,
             category=category,
-            tasks=[t.model_dump() for t in formatted_tasks], # Store as dictionaries
-            reasoning=[r.model_dump() for r in reasoning], # Store as dictionaries
+            tasks=[t.model_dump() for t in formatted_tasks],
+            reasoning=[r.model_dump() for r in reasoning],
             friction_intervention=intervention,
             metrics=response_data["metrics"],
             trace_id=trace_id

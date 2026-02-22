@@ -10,7 +10,7 @@ const PRODUCTION_API_URL = "https://aletheia-backend-yu1n.onrender.com";
 
 const API_URL = import.meta.env.VITE_API_URL || PRODUCTION_API_URL;
 
-export const generateAgenticPlan = async (goal: string): Promise<Plan> => {
+export const generateAgenticPlan = async (goal: string, user_email?: string): Promise<Plan> => {
   // Add a trailing slash check or ensure consistency
   const baseUrl = API_URL.replace(/\/$/, '');
   const endpoint = `${baseUrl}/api/plan`;
@@ -23,7 +23,7 @@ export const generateAgenticPlan = async (goal: string): Promise<Plan> => {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ goal }),
+      body: JSON.stringify({ goal, user_email: user_email || "anonymous" }),
       signal: controller.signal
     });
     clearTimeout(timeoutId);
