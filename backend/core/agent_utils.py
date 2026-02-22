@@ -1,9 +1,11 @@
 import os
 import openai
+from google import genai
+from google.genai import types
 
 def get_llm_client():
     """
-    Retrieves an LLM client, prioritizing DeepSeek, then Groq, then OpenAI.
+    Retrieves an LLM client, prioritizing DeepSeek, then Groq, then OpenAI, then Google Gemini.
     Returns a dictionary with 'type', 'client', and 'model'.
     """
     # 1. DeepSeek
@@ -28,7 +30,7 @@ def get_llm_client():
         except Exception as e:
             print(f"Groq client initialization failed: {e}.")
 
-    # 3. OpenAI (Fallback)
+    # 3. OpenAI
     openai_api_key = os.getenv("OPENAI_API_KEY")
     if openai_api_key and "your_" not in openai_api_key.lower():
         try:
@@ -39,4 +41,20 @@ def get_llm_client():
         except Exception as e:
             print(f"OpenAI client initialization failed: {e}.")
 
-    raise ValueError("No valid LLM client could be initialized. Please check your DEEPSEEK_API_KEY, GROQ_API_KEY, or OPENAI_API_KEY.")
+    # 4. Google Gemini (Fallback)
+    google_api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+    if google_api_key and "your_" not in google_api_key.lower():
+        try:
+            print("Attempting to initialize Google Gemini client.")
+            # Wrap Gemini in an OpenAI-compatible interface if possible, or handle separately.
+            # For now, we will return the genai client but the agents need to handle it.
+            # Since agents expect chat.completions.create, we might need a wrapper.
+            # To keep it simple and consistent with existing code, let's use the genai client
+            # and let agents handle the 'gemini' type.
+            client = genai.Client(api_key=google_api_key)
+            print("Google Gemini client initialized successfully.")
+            return {"type": "gemini", "client": client, "model": "gemini-1.5-flash"}
+        except Exception as e:
+            print(f"Google Gemini client initialization failed: {e}.")
+
+    raise ValueError("No valid LLM client could be initialized. Please check your DEEPSEEK_API_KEY, GROQ_API_KEY, OPENAI_API_KEY, or GOOGLE_API_KEY.")

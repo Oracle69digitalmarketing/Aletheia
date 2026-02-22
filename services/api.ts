@@ -4,16 +4,18 @@ import { Plan, TaskStatus, LogEntry } from "../types";
 /**
  * PRODUCTION SETUP:
  * Replace the string below with your actual Render backend URL 
- * (e.g., https://aletheia-backend-yu1n.onrender.com)
+ * (e.g., https://aletheia-backend.onrender.com)
  */
 const PRODUCTION_API_URL = "https://aletheia-backend-yu1n.onrender.com";
 
 const API_URL = import.meta.env.VITE_API_URL || PRODUCTION_API_URL;
 
-export const generateAgenticPlan = async (goal: string): Promise<Plan> => {
+export const generateAgenticPlan = async (goal: string, user_email?: string): Promise<Plan> => {
+  // Add a trailing slash check or ensure consistency
   const baseUrl = API_URL.replace(/\/$/, '');
   const endpoint = `${baseUrl}/api/plan`;
   
+  // Create an AbortController for a 30s timeout
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30000);
 
@@ -21,7 +23,7 @@ export const generateAgenticPlan = async (goal: string): Promise<Plan> => {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ goal }),
+      body: JSON.stringify({ goal, user_email: user_email || "anonymous" }),
       signal: controller.signal
     });
     clearTimeout(timeoutId);
@@ -34,7 +36,7 @@ export const generateAgenticPlan = async (goal: string): Promise<Plan> => {
     const data = await response.json().catch(() => null);
 
     if (!data || !data.tasks) {
-      throw new Error("Invalid response format from Engine.");
+      throw new Error("Invalid response format from Aletheia Engine.");
     }
 
     const logs: LogEntry[] = [
@@ -71,33 +73,6 @@ export const generateAgenticPlan = async (goal: string): Promise<Plan> => {
     };
   } catch (err: any) {
     console.error("API Fetch Error:", err);
-    throw new Error(err.message || "Could not connect to Ondo Connect Intelligence Engine.");
+    throw new Error(err.message || "Could not connect to Aletheia Intelligence Engine.");
   }
-};
-
-// --- Ondo Connect New Services ---
-
-export const registerFarmer = async (farmerData: any) => {
-    const baseUrl = API_URL.replace(/\/$/, '');
-    const response = await fetch(`${baseUrl}/api/agri/farmer/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(farmerData)
-    });
-    return response.json();
-};
-
-export const getAgriAdvice = async (farmerId: string) => {
-    const baseUrl = API_URL.replace(/\/$/, '');
-    const response = await fetch(`${baseUrl}/api/agri/advice/${farmerId}`);
-    return response.json();
-};
-
-export const searchMarket = async (query?: string, type?: string) => {
-    const baseUrl = API_URL.replace(/\/$/, '');
-    const params = new URLSearchParams();
-    if (query) params.append('query', query);
-    if (type) params.append('type', type);
-    const response = await fetch(`${baseUrl}/api/market/search?${params.toString()}`);
-    return response.json();
 };

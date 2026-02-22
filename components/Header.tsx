@@ -38,11 +38,11 @@ const Header: React.FC<HeaderProps> = ({ projectUrl, user, onConnect, onDisconne
           <div className="flex justify-between h-16 items-center">
             {/* Logo Section */}
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-              <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-emerald-100 border border-slate-100">
-                <img src="/logo.jpeg" alt="Ondo Connect Logo" className="w-full h-full object-cover" />
+              <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-indigo-100 border border-slate-100">
+                <img src="/logo.jpeg" alt="Aletheia Logo" className="w-full h-full object-cover" />
               </div>
-              <span className="text-xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-600">
-                Ondo Connect
+              <span className="text-xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">
+                Aletheia
               </span>
             </div>
             
@@ -50,9 +50,9 @@ const Header: React.FC<HeaderProps> = ({ projectUrl, user, onConnect, onDisconne
             <div className="hidden md:flex items-center gap-6">
               <button 
                 onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); closeAllMenus(); }}
-                className="text-slate-500 hover:text-emerald-600 transition-colors text-sm font-bold"
+                className="text-slate-500 hover:text-indigo-600 transition-colors text-sm font-bold"
               >
-                Connect
+                Strategy
               </button>
               <a 
                 href="https://github.com/oracle69digitalmarketing/aletheia/blob/main/docs/ALETHEIA.md"
@@ -68,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({ projectUrl, user, onConnect, onDisconne
                 rel="noopener noreferrer"
                 className="text-slate-500 hover:text-indigo-600 transition-colors text-sm font-bold flex items-center gap-1.5"
               >
-                Opik Trace
+                Opik Control Plane
                 <i className="fa-solid fa-external-link text-[10px]"></i>
               </a>
 

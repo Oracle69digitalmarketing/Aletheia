@@ -24,7 +24,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onPlanUpdate, user }) => {
     setError(null);
     setLastGoal(goal);
     try {
-      const plan = await generateAgenticPlan(goal);
+      const plan = await generateAgenticPlan(goal, user?.email);
       if (plan) {
         setCurrentPlan(plan);
         setView('strategy');
@@ -47,14 +47,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onPlanUpdate, user }) => {
       <div className="text-center mb-12">
         <h1 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight mb-4 leading-tight">
           {user ? (
-            <>Empowering Ondo, <span className="text-emerald-600">{user.name.split(' ')[0]}</span></>
+            <>Unveil Your Truth, <span className="text-indigo-600">{user.name.split(' ')[0]}</span></>
           ) : (
-            <>Empowering <span className="text-emerald-600">Ondo</span></>
+            <>Unveil Your <span className="text-indigo-600">Truth</span></>
           )}
         </h1>
         <p className="text-lg text-slate-600 max-w-2xl mx-auto font-medium leading-relaxed">
-          Ondo Connect powers Agriculture, Commerce, and Circular Economy
-          for a prosperous and sustainable state.
+          Aletheia transforms resolutions into agent-orchestrated strategies
+          with real Opik observability. Built for high-accountability seekers.
         </p>
       </div>
 
@@ -137,42 +137,41 @@ const Dashboard: React.FC<DashboardProps> = ({ onPlanUpdate, user }) => {
 
         {!currentPlan && !isLoading && (
           <div className="space-y-12">
-            <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-8 flex flex-col md:flex-row items-center gap-8 shadow-sm">
+            <div className="bg-indigo-50 border border-indigo-100 rounded-3xl p-8 flex flex-col md:flex-row items-center gap-8 shadow-sm">
               <div className="flex-1 space-y-4 text-center md:text-left">
-                <h2 className="text-2xl font-black text-slate-900">How Ondo Connect transforms our state</h2>
+                <h2 className="text-2xl font-black text-slate-900">How Aletheia helps you stay on track</h2>
                 <ul className="space-y-3">
                   <li className="flex items-center gap-3 text-slate-600 font-medium justify-center md:justify-start">
                     <i className="fa-solid fa-check-circle text-emerald-500"></i>
-                    Connect farmers with expert advice and markets.
+                    Decompose vague resolutions into hourly tasks.
                   </li>
                   <li className="flex items-center gap-3 text-slate-600 font-medium justify-center md:justify-start">
                     <i className="fa-solid fa-check-circle text-emerald-500"></i>
-                    Enable artisans to grow their business with QR bookings.
+                    Predict mental friction and provide custom interventions.
                   </li>
                   <li className="flex items-center gap-3 text-slate-600 font-medium justify-center md:justify-start">
                     <i className="fa-solid fa-check-circle text-emerald-500"></i>
-                    Reward citizens for sustainable waste management.
+                    Observe agentic reasoning in real-time via Opik.
                   </li>
                 </ul>
               </div>
-              <div className="w-full md:w-64 aspect-video bg-white rounded-2xl border border-emerald-100 shadow-inner flex items-center justify-center text-emerald-400">
-                <i className="fa-solid fa-seedling text-5xl animate-pulse"></i>
+              <div className="w-full md:w-64 aspect-video bg-white rounded-2xl border border-indigo-100 shadow-inner flex items-center justify-center text-indigo-400">
+                <i className="fa-solid fa-wand-magic-sparkles text-5xl animate-pulse"></i>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-10">
               {[
-                { icon: 'fa-wheat-awn', title: 'Agri-Connect', desc: 'Smart farming advice, pest detection, and weather alerts for our farmers.', bgColor: 'bg-emerald-50', textColor: 'text-emerald-600', hoverBg: 'group-hover:bg-emerald-600' },
-                { icon: 'fa-shop', title: 'Market-Connect', desc: 'Buy and sell agricultural products, services, and recycled materials.', bgColor: 'bg-blue-50', textColor: 'text-blue-600', hoverBg: 'group-hover:bg-blue-600' },
-                { icon: 'fa-tools', title: 'Service-Connect', desc: 'Find and book local artisans like mechanics and tailors via QR codes.', bgColor: 'bg-orange-50', textColor: 'text-orange-600', hoverBg: 'group-hover:bg-orange-600' },
-                { icon: 'fa-recycle', title: 'Circular-Connect', desc: 'Request waste collection and earn rewards for a cleaner Ondo.', bgColor: 'bg-teal-50', textColor: 'text-teal-600', hoverBg: 'group-hover:bg-teal-600' }
+                { icon: 'fa-microchip', title: 'Agentic Ensemble', desc: 'Planner, Orchestrator, and Monitor agents work together to validate your goal.' },
+                { icon: 'fa-eye', title: 'Real Opik Tracing', desc: 'Every reasoning step is pushed to your Opik workspace for production-grade observability.' },
+                { icon: 'fa-shield-heart', title: 'Friction Detection', desc: 'Our agents proactively identify obstacles before they derail your commitment.' }
               ].map((feature, i) => (
-                <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl transition-all group">
-                  <div className={`w-14 h-14 ${feature.bgColor} ${feature.textColor} rounded-[1.25rem] flex items-center justify-center text-2xl mb-6 ${feature.hoverBg} group-hover:text-white transition-all`}>
+                <div key={i} className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl hover:border-indigo-100 transition-all group">
+                  <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-[1.25rem] flex items-center justify-center text-2xl mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-all">
                     <i className={`fa-solid ${feature.icon}`}></i>
                   </div>
-                  <h3 className="text-lg font-black text-slate-800 mb-2 tracking-tight">{feature.title}</h3>
-                  <p className="text-slate-600 text-xs leading-relaxed font-medium">{feature.desc}</p>
+                  <h3 className="text-xl font-black text-slate-800 mb-3 tracking-tight">{feature.title}</h3>
+                  <p className="text-slate-600 text-sm leading-relaxed font-medium">{feature.desc}</p>
                 </div>
               ))}
             </div>

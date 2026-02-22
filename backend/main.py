@@ -14,17 +14,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from opik import track
 from dotenv import load_dotenv
-from datetime import datetime # Added datetime import
-from typing import List, Optional
+from datetime import datetime
+from typing import List
 
 from agents.planner import decompose_goal, detect_friction
 from agents.evaluator import evaluate_plan
 from core.opik_setup import get_trace_url, get_project_url, get_project
-from core.database import get_db, PlanRecord, User, Listing, Transaction
+from core.database import get_db, PlanRecord
 from sqlalchemy.orm import Session
-from fastapi import Depends, HTTPException
-
-from services import agri_service, market_service
+from fastapi import Depends
+from core.agent_utils import get_llm_client
 
 load_dotenv()
 
@@ -59,7 +58,9 @@ app.add_middleware(
         "https://aletheia-ruddy.vercel.app",
         "https://aletheia-ruddy-vercel-app.vercel.app",
         "http://localhost:5173",
-        "http://localhost:3000"
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -80,6 +81,7 @@ async def root():
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
+    google_api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
     deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
     groq_api_key = os.getenv("GROQ_API_KEY")
     openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -92,10 +94,11 @@ async def health():
         "status": "healthy",
         "timestamp": time.time(),
         "diagnostics": {
-            "deepseek_api_key_set": bool(deepseek_api_key and "your_" not in deepseek_api_key.lower()),
-            "groq_api_key_set": bool(groq_api_key and "your_" not in groq_api_key.lower()),
-            "openai_api_key_set": bool(openai_api_key and "your_" not in openai_api_key.lower()),
-            "opik_api_key_set": bool(opik_api_key and "your_" not in opik_api_key.lower()),
+            "deepseek_api_key_set": is_valid(deepseek_api_key),
+            "groq_api_key_set": is_valid(groq_api_key),
+            "openai_api_key_set": is_valid(openai_api_key),
+            "google_api_key_set": is_valid(google_api_key),
+            "opik_api_key_set": is_valid(opik_api_key),
             "opik_workspace": os.getenv("OPIK_WORKSPACE")
         }
     }
@@ -114,10 +117,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         }
     )
     
-from backend.models import (
-    GoalRequest, LogEntry, AgentThought, Task, PlanMetrics, PlanResponse,
-    FarmerRegisterRequest, AdviceResponse, ListingCreateRequest
-)
+from backend.models import GoalRequest, LogEntry, AgentThought, Task, PlanMetrics, PlanResponse
 
 @app.get("/api/history", response_model=List[PlanResponse])
 async def get_history(user_email: str, db: Session = Depends(get_db)):
@@ -165,6 +165,7 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
             "helpfulness": 0.0,
             "reasoning": f"Evaluation failed due to: {str(e)[:50]}..."
         }
+
     if scores is None:
         scores = {
             "actionability": 0.0,
@@ -186,7 +187,7 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
         AgentThought(agent="Monitor", thought=monitor_thought, timestamp=datetime.now().isoformat())
     ]
 
-    latency = int((time.monotonic() - start_time) * 1000)
+    latency = int((time.time() - start_time) * 1000)
 
     # Retrieve the ACTUAL Opik Trace ID for this request
     from opik import opik_context
@@ -267,40 +268,3 @@ async def create_plan(request: GoalRequest, db: Session = Depends(get_db)):
         print(f"Database Save Error: {e}")
 
     return response_data
-
-# --- Ondo Connect Endpoints ---
-
-@app.post("/api/agri/farmer/register")
-async def register_farmer(request: FarmerRegisterRequest, db: Session = Depends(get_db)):
-    try:
-        user = await agri_service.register_farmer(db, request)
-        return {"status": "success", "user_id": user.id, "message": "Farmer registered successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/agri/advice/{farmer_id}", response_model=AdviceResponse)
-async def get_advice(farmer_id: str, db: Session = Depends(get_db)):
-    advice = await agri_service.get_farmer_advice(db, farmer_id)
-    if not advice:
-        raise HTTPException(status_code=404, detail="Farmer not found")
-    return advice
-
-@app.post("/api/market/listings")
-async def create_listing(request: ListingCreateRequest, db: Session = Depends(get_db)):
-    try:
-        listing = await market_service.create_listing(db, request)
-        return {"status": "success", "listing_id": listing.id}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/market/search")
-async def search_listings(query: Optional[str] = None, type: Optional[str] = None, db: Session = Depends(get_db)):
-    listings = await market_service.search_listings(db, query, type)
-    return listings
-
-@app.get("/api/users/me")
-async def get_me(phone: str, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.phone == phone).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user

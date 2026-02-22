@@ -4,17 +4,17 @@ To run Aletheia correctly, ensure the following environment variables are set.
 
 ## Backend Environment Variables (`backend/.env`)
 
-Aletheia prioritizes LLM providers in the following order: **DeepSeek > Groq > Google/OpenAI**.
+Aletheia prioritizes LLM providers in the following order: **DeepSeek > Groq > OpenAI > Google**.
 
 | Variable | Description |
 | :--- | :--- |
-| `DEEPSEEK_API_KEY` | **Recommended.** Your DeepSeek API Key. |
-| `GROQ_API_KEY` | **Alternative.** Your Groq API Key. |
-| `OPENAI_API_KEY` | **Fallback.** Your OpenAI API Key. |
-| `OPIK_API_KEY` | **Recommended.** Your Opik/Comet API Key for tracing. (Fallback: `COMET_API_KEY`) |
-| `OPIK_WORKSPACE` | Your Opik/Comet workspace name. (Fallback: `COMET_WORKSPACE`) |
-| `OPIK_PROJECT_NAME` | The project name for Opik tracing. (Fallback: `OPIK_PROJECT`, `COMET_PROJECT`) |
-| `MOCK_MODE` | Set to `true` to use mock agent responses (useful if no Gemini API key). |
+| `DEEPSEEK_API_KEY` | **Recommended.** Your API key from DeepSeek. Uses `deepseek-chat` model. |
+| `GROQ_API_KEY` | **Recommended.** Your API key from Groq. Uses `llama-3.3-70b-versatile` model. |
+| `OPENAI_API_KEY` | Your OpenAI API key. Uses `gpt-4o`. |
+| `GOOGLE_API_KEY` | Your API key from Google AI Studio / Gemini Studio. (Fallback: `GEMINI_API_KEY`). Uses `gemini-1.5-flash`. |
+| `OPIK_API_KEY` | **Recommended.** Your Opik/Comet API Key for tracing. |
+| `OPIK_WORKSPACE` | Your Opik/Comet workspace name. |
+| `OPIK_PROJECT_NAME` | The project name for Opik tracing. |
 | `DATABASE_URL` | SQLAlchemy database URL (defaults to `sqlite:///./aletheia.db`). |
 
 ## Frontend Environment Variables (`.env` or `.env.production`)
